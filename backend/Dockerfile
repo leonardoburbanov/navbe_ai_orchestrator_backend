@@ -1,14 +1,26 @@
-FROM python:3.12-slim
+FROM python:3.13-slim
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Set environment variables
+ENV UV_PROJECT_ENVIRONMENT=/venv
+ENV PATH="/venv/bin:$PATH"
 
 WORKDIR /app
 
-RUN pip install uv
+# Enable bytecode compilation
+ENV UV_COMPILE_BYTECODE=1
 
-COPY pyproject.toml uv.lock* ./
-RUN uv sync --no-dev
+# Copy project files and sync dependencies
+# We copy pyproject.toml first to leverage Docker layer caching
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project --no-dev
 
+# Copy the rest of the application
 COPY . ./backend
 
 EXPOSE 8000
 
-CMD ["uv", "run", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run the application using the synced virtual environment
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

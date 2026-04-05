@@ -5,6 +5,7 @@ from mcp import types
 from sqlmodel import Session, select, create_engine
 from .models import Process, Execution, ProcessStatus
 from .engine import ProcessEngine
+from .connectors import send_email
 
 class MCPServer:
     """MCP server to expose process management tools to AI agents."""
@@ -53,6 +54,20 @@ class MCPServer:
                             "execution_id": {"type": "integer", "description": "The ID of the execution to check."}
                         },
                         "required": ["execution_id"]
+                    }
+                ),
+                types.Tool(
+                    name="send_email",
+                    description="Send an email via Resend.",
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "to": {"type": "string", "description": "Recipient email address."},
+                            "subject": {"type": "string", "description": "Email subject."},
+                            "body": {"type": "string", "description": "Email body (HTML)."},
+                            "from_email": {"type": "string", "description": "Sender email address (optional, defaults to onboarding@resend.dev)."}
+                        },
+                        "required": ["to", "subject", "body"]
                     }
                 )
             ]
@@ -107,6 +122,23 @@ class MCPServer:
                         "logs_preview": execution.logs[-500:] if execution.logs else ""
                     }
                     return types.CallToolResult(content=[types.TextContent(type="text", text=str(status_info))])
+
+            elif name == "send_email":
+                to = arguments.get("to")
+                subject = arguments.get("subject")
+                body = arguments.get("body")
+                from_email = arguments.get("from_email", "onboarding@resend.dev")
+                
+                try:
+                    response = send_email(to=to, subject=subject, body=body, from_email=from_email)
+                    return types.CallToolResult(
+                        content=[types.TextContent(type="text", text=f"Email sent successfully to {to}. Response: {response}")]
+                    )
+                except Exception as e:
+                    return types.CallToolResult(
+                        content=[types.TextContent(type="text", text=f"Error sending email: {str(e)}")],
+                        is_error=True
+                    )
 
             else:
                 return types.CallToolResult(

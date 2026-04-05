@@ -11,9 +11,11 @@ from starlette.middleware.cors import CORSMiddleware
 from .models import Process, Execution, ProcessStatus
 from .engine import ProcessEngine
 from .mcp_server import MCPServer
+from .connectors import send_email
+from .config import settings
 
 # Configuration
-DATABASE_URL = "sqlite:///orchestrator.db"
+DATABASE_URL = settings.DATABASE_URL
 engine = create_engine(DATABASE_URL, echo=False, connect_args={"check_same_thread": False})
 process_engine = ProcessEngine(engine)
 mcp_server = MCPServer(engine, process_engine)
@@ -35,6 +37,7 @@ async def lifespan(app: FastAPI):
                         {"type": "shell", "command": "echo 'Hello from Navbe AI Orchestrator'"},
                         {"type": "shell", "command": "echo 'Sleeping for 3 seconds...'"},
                         {"type": "shell", "command": "sleep 3"},
+                        {"type": "resend", "to": "onboarding@resend.dev", "subject": "Test from Orchestrator", "body": "<h1>Success!</h1><p>The process is running.</p>"},
                         {"type": "shell", "command": "echo 'Execution complete!'"}
                     ]
                 )
@@ -104,6 +107,15 @@ def read_execution(execution_id: int, session: Session = Depends(get_session)):
 def read_process_executions(process_id: int, session: Session = Depends(get_session)):
     executions = session.exec(select(Execution).where(Execution.process_id == process_id)).all()
     return executions
+
+@app.post("/send-email")
+async def send_email_endpoint(to: str, subject: str, body: str, from_email: str = "onboarding@resend.dev"):
+    """Sends an email directly via Resend."""
+    try:
+        response = send_email(to=to, subject=subject, body=body, from_email=from_email)
+        return {"status": "success", "response": response}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)

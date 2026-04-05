@@ -7,9 +7,13 @@ export interface Process {
 }
 
 export interface Step {
-  type: 'shell' | 'python';
+  type: 'shell' | 'python' | 'resend';
   command?: string;
   code?: string;
+  to?: string;
+  from_email?: string;
+  subject?: string;
+  body?: string;
 }
 
 export interface Execution {

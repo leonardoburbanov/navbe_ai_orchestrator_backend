@@ -7,9 +7,9 @@ services:
       - "8003:8000"
     volumes:
       - ./backend:/app/backend
-      - backend_db:/app
+      - backend_db:/app/data
     environment:
-      - DATABASE_URL=sqlite:///orchestrator.db
+      - DATABASE_URL=sqlite:///data/orchestrator.db
     restart: always
 
   frontend:

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { getProcesses, createExecution, createProcess, getExecution } from '../lib/api';
 import { Process, Execution } from '../lib/types';
-import { Play, Plus, List, Activity, Terminal, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Play, Plus, List, Activity, Terminal, CheckCircle, XCircle, Loader2, Trash2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -13,7 +13,11 @@ export default function Home() {
   const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
   const [runningExecution, setRunningExecution] = useState<Execution | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newProcess, setNewProcess] = useState({ name: '', description: '', steps: [{ type: 'shell', command: 'echo "Hello from Navbe AI"' }] });
+  const [newProcess, setNewProcess] = useState<{name: string, description: string, steps: any[]}>({ 
+    name: '', 
+    description: '', 
+    steps: [{ type: 'shell', command: 'echo "Hello from Navbe AI"' }] 
+  });
 
   const handleStartProcess = async (processId: number) => {
     try {
@@ -34,6 +38,26 @@ export default function Home() {
     } catch (err) {
       console.error('Failed to create process', err);
     }
+  };
+
+  const addStep = () => {
+    setNewProcess({
+      ...newProcess,
+      steps: [...newProcess.steps, { type: 'shell', command: 'echo "New Step"' }]
+    });
+  };
+
+  const removeStep = (index: number) => {
+    if (newProcess.steps.length <= 1) return;
+    const steps = [...newProcess.steps];
+    steps.splice(index, 1);
+    setNewProcess({ ...newProcess, steps });
+  };
+
+  const updateStep = (index: number, updates: any) => {
+    const steps = [...newProcess.steps];
+    steps[index] = { ...steps[index], ...updates };
+    setNewProcess({ ...newProcess, steps });
   };
 
   return (
@@ -158,18 +182,125 @@ export default function Home() {
                       placeholder="What does this process do?"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-1">Initial Step (Shell Command)</label>
-                    <input 
-                      type="text" 
-                      value={newProcess.steps[0].command}
-                      onChange={(e) => {
-                        const steps = [...newProcess.steps];
-                        steps[0].command = e.target.value;
-                        setNewProcess({...newProcess, steps});
-                      }}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 font-mono text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                    />
+                  <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2">
+                    <div className="flex justify-between items-center">
+                      <label className="block text-sm font-medium text-slate-400">Process Steps</label>
+                      <button 
+                        onClick={addStep}
+                        className="text-xs bg-blue-600/20 text-blue-400 px-2 py-1 rounded hover:bg-blue-600/30 transition-colors flex items-center space-x-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add Step</span>
+                      </button>
+                    </div>
+
+                    {newProcess.steps.map((step, index) => (
+                      <div key={index} className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-4 relative">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Step {index + 1}</span>
+                          {newProcess.steps.length > 1 && (
+                            <button 
+                              onClick={() => removeStep(index)}
+                              className="text-slate-500 hover:text-rose-500 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Step Type</label>
+                          <select 
+                            value={step.type}
+                            onChange={(e) => {
+                              const type = e.target.value;
+                              let updates: any = { type };
+                              if (type === 'shell') updates.command = 'echo "Hello"';
+                              if (type === 'python') updates.code = 'print("Hello")';
+                              if (type === 'resend') {
+                                updates.from_email = 'onboarding@resend.dev';
+                                updates.to = '';
+                                updates.subject = '';
+                                updates.body = '';
+                              }
+                              updateStep(index, updates);
+                            }}
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                          >
+                            <option value="shell">Shell Command</option>
+                            <option value="python">Python Code</option>
+                            <option value="resend">Resend Email</option>
+                          </select>
+                        </div>
+
+                        {step.type === 'shell' && (
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Command</label>
+                            <input 
+                              type="text" 
+                              value={step.command || ''}
+                              onChange={(e) => updateStep(index, { command: e.target.value })}
+                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 font-mono text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                            />
+                          </div>
+                        )}
+
+                        {step.type === 'python' && (
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Python Code</label>
+                            <textarea 
+                              value={step.code || ''}
+                              onChange={(e) => updateStep(index, { code: e.target.value })}
+                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 font-mono text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all h-20"
+                            />
+                          </div>
+                        )}
+
+                        {step.type === 'resend' && (
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">From</label>
+                              <input 
+                                type="email" 
+                                value={step.from_email || 'onboarding@resend.dev'}
+                                onChange={(e) => updateStep(index, { from_email: e.target.value })}
+                                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                                placeholder="sender@example.com"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">To</label>
+                              <input 
+                                type="email" 
+                                value={step.to || ''}
+                                onChange={(e) => updateStep(index, { to: e.target.value })}
+                                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                                placeholder="recipient@example.com"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subject</label>
+                              <input 
+                                type="text" 
+                                value={step.subject || ''}
+                                onChange={(e) => updateStep(index, { subject: e.target.value })}
+                                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                                placeholder="Email Subject"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Body (HTML)</label>
+                              <textarea 
+                                value={step.body || ''}
+                                onChange={(e) => updateStep(index, { body: e.target.value })}
+                                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all h-20"
+                                placeholder="<h1>Hello</h1>"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -258,7 +389,9 @@ function ProcessDetails({ process, onRun }: { process: Process, onRun: () => voi
               <div key={i} className="flex items-center space-x-3 bg-slate-950/50 p-3 rounded-lg border border-slate-800">
                 <span className="text-slate-600 font-mono text-sm">{i + 1}.</span>
                 <span className="bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded text-[10px] font-bold uppercase">{step.type}</span>
-                <code className="text-slate-300 text-sm truncate">{step.command || step.code}</code>
+                <code className="text-slate-300 text-sm truncate">
+                  {step.type === 'resend' ? `From: ${step.from_email || 'onboarding@resend.dev'} | To: ${step.to}` : (step.command || step.code)}
+                </code>
               </div>
             ))}
           </div>

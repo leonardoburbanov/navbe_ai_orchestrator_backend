@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Callable, Awaitable
 from .models import Process, Execution, ProcessStatus
 from sqlmodel import Session, create_engine, select
+from .connectors import send_email
 
 class ProcessEngine:
     """Core process execution engine for managing asynchronous tasks."""
@@ -82,6 +83,8 @@ class ProcessEngine:
             for key, value in params.items():
                 code = code.replace(f"{{{{{key}}}}}", str(value))
             return await self._run_shell_step(f"python -c {shlex.quote(code)}", execution, session)
+        elif step_type == "resend":
+            return await self._run_resend_step(step, execution, session, params)
         else:
             execution.logs += f"Unknown step type: {step_type}\n"
             return False
@@ -115,4 +118,35 @@ class ProcessEngine:
             return process.returncode == 0
         except Exception as e:
             execution.logs += f"Shell execution error: {str(e)}\n"
+            return False
+
+    async def _run_resend_step(self, step: Dict[str, Any], execution: Execution, session: Session, params: Dict[str, Any]) -> bool:
+        """Runs a Resend email step."""
+        try:
+            to = step.get("to", "")
+            subject = step.get("subject", "")
+            body = step.get("body", "")
+            from_email = step.get("from_email", "onboarding@resend.dev")
+
+            # Parameter injection
+            for key, value in params.items():
+                to = to.replace(f"{{{{{key}}}}}", str(value))
+                subject = subject.replace(f"{{{{{key}}}}}", str(value))
+                body = body.replace(f"{{{{{key}}}}}", str(value))
+                from_email = from_email.replace(f"{{{{{key}}}}}", str(value))
+
+            execution.logs += f"Sending email from {from_email} to {to} via Resend...\n"
+            session.add(execution)
+            session.commit()
+
+            response = send_email(to=to, subject=subject, body=body, from_email=from_email)
+            
+            execution.logs += f"Resend response: {response}\n"
+            session.add(execution)
+            session.commit()
+            return True
+        except Exception as e:
+            execution.logs += f"Resend execution error: {str(e)}\n"
+            session.add(execution)
+            session.commit()
             return False
