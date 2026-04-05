@@ -1,410 +1,147 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import useSWR from 'swr';
-import { getProcesses, createExecution, createProcess, getExecution } from '../lib/api';
-import { Process, Execution } from '../lib/types';
-import { Play, Plus, List, Activity, Terminal, CheckCircle, XCircle, Loader2, Trash2 } from 'lucide-react';
-import { clsx } from 'clsx';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
+import { Terminal, History } from 'lucide-react';
+import { Header } from '@/shared/components/layout/header';
+import { ProcessList } from '@/domains/processes/components/process-list';
+import { ProcessDetails } from '@/domains/processes/components/process-details';
+import { ProcessFormModal } from '@/domains/processes/components/process-form-modal';
+import { ExecutionViewer } from '@/domains/executions/components/execution-viewer';
+import { ExecutionHistoryTable } from '@/domains/executions/components/execution-history-table';
+import { ScheduleModal } from '@/domains/schedules/components/ScheduleModal';
+import { useProcesses } from '@/domains/processes/hooks/use-processes';
+import { useExecutions, useAllExecutions } from '@/domains/executions/hooks/use-executions';
+import { Process } from '@/domains/processes/types';
+import { Execution } from '@/domains/executions/types';
 
 export default function Home() {
-  const { data: processes, error, mutate } = useSWR('processes', getProcesses);
+  const { processes, addProcess, isLoading: isProcessesLoading } = useProcesses();
+  const { startExecution } = useExecutions();
+  const { executions: allExecutions, isLoading: isHistoryLoading } = useAllExecutions(20, 5000);
+
   const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
   const [runningExecution, setRunningExecution] = useState<Execution | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newProcess, setNewProcess] = useState<{name: string, description: string, steps: any[]}>({ 
-    name: '', 
-    description: '', 
-    steps: [{ type: 'shell', command: 'echo "Hello from Navbe AI"' }] 
-  });
+  const [schedulingProcess, setSchedulingProcess] = useState<Process | null>(null);
+  const [refreshInterval, setRefreshInterval] = useState<number>(1000);
+  const [view, setView] = useState<'dashboard' | 'history'>('dashboard');
 
-  const handleStartProcess = async (processId: number) => {
+  const handleRunProcess = async (processId: number) => {
     try {
-      const execution = await createExecution(processId);
+      const execution = await startExecution(processId);
       setRunningExecution(execution);
-      mutate();
     } catch (err) {
-      console.error('Failed to start process', err);
+      // Error is handled in hook/service, but we could add a toast here
+      console.error('Execution failed to start', err);
     }
   };
 
-  const handleCreateProcess = async () => {
+  const handleCreateProcess = async (newProcess: Partial<Process>) => {
     try {
-      await createProcess(newProcess as any);
-      mutate();
+      await addProcess(newProcess);
       setShowAddModal(false);
-      setNewProcess({ name: '', description: '', steps: [{ type: 'shell', command: 'echo "Hello from Navbe AI"' }] });
     } catch (err) {
       console.error('Failed to create process', err);
     }
   };
 
-  const addStep = () => {
-    setNewProcess({
-      ...newProcess,
-      steps: [...newProcess.steps, { type: 'shell', command: 'echo "New Step"' }]
-    });
-  };
-
-  const removeStep = (index: number) => {
-    if (newProcess.steps.length <= 1) return;
-    const steps = [...newProcess.steps];
-    steps.splice(index, 1);
-    setNewProcess({ ...newProcess, steps });
-  };
-
-  const updateStep = (index: number, updates: any) => {
-    const steps = [...newProcess.steps];
-    steps[index] = { ...steps[index], ...updates };
-    setNewProcess({ ...newProcess, steps });
-  };
-
   return (
     <main className="min-h-screen bg-slate-950 text-slate-50 p-8 font-sans">
       <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header */}
-        <header className="flex justify-between items-center border-b border-slate-800 pb-6">
-          <div className="flex items-center space-x-4">
-            <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-500/20">
-              <Activity className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Navbe AI Orchestrator</h1>
-              <p className="text-slate-400">Local AI-compatible process management</p>
-            </div>
-          </div>
-          <button 
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors font-medium shadow-lg shadow-blue-500/10"
-          >
-            <Plus className="w-5 h-5" />
-            <span>New Process</span>
-          </button>
-        </header>
+        <Header 
+          onNewProcess={() => setShowAddModal(true)} 
+          view={view}
+          onViewChange={setView}
+        />
 
-        {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Process List */}
-          <section className="md:col-span-1 space-y-4">
+        {view === 'history' ? (
+          <div className="space-y-4 animate-in fade-in duration-500">
             <div className="flex items-center space-x-2 text-slate-400 font-semibold uppercase text-xs tracking-wider">
-              <List className="w-4 h-4" />
-              <span>Processes</span>
+              <History className="w-4 h-4 text-emerald-500" />
+              <span>Global Execution History</span>
             </div>
             
-            <div className="space-y-3">
-              {processes?.map((p) => (
-                <div 
-                  key={p.id}
-                  onClick={() => setSelectedProcess(p)}
-                  className={clsx(
-                    "p-4 rounded-xl border cursor-pointer transition-all hover:scale-[1.02]",
-                    selectedProcess?.id === p.id 
-                      ? "bg-slate-900 border-blue-500/50 ring-1 ring-blue-500/20" 
-                      : "bg-slate-900/50 border-slate-800 hover:border-slate-700"
-                  )}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-lg">{p.name}</h3>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); handleStartProcess(p.id); }}
-                      className="p-1.5 bg-blue-600/10 hover:bg-blue-600/20 rounded-lg text-blue-400 transition-colors"
-                      title="Run Process"
-                    >
-                      <Play className="w-4 h-4 fill-current" />
-                    </button>
-                  </div>
-                  <p className="text-sm text-slate-400 line-clamp-2">{p.description || "No description provided."}</p>
-                </div>
-              ))}
-              {processes?.length === 0 && (
-                <div className="text-center p-8 border border-dashed border-slate-800 rounded-xl text-slate-500">
-                  No processes found. Create one to get started.
-                </div>
-              )}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+              <ExecutionHistoryTable 
+                executions={allExecutions} 
+                isLoading={isHistoryLoading} 
+                onViewLogs={(execution) => {
+                  setRunningExecution(execution);
+                  setView('dashboard');
+                }}
+              />
             </div>
-          </section>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in slide-in-from-bottom-4 duration-500">
+            <ProcessList 
+              processes={processes} 
+              selectedProcessId={selectedProcess?.id}
+              onSelect={setSelectedProcess}
+              onRun={handleRunProcess}
+              onSchedule={setSchedulingProcess}
+            />
 
-          {/* Details / Logs Area */}
-          <section className="md:col-span-2 space-y-4">
-            <div className="flex items-center space-x-2 text-slate-400 font-semibold uppercase text-xs tracking-wider">
-              <Terminal className="w-4 h-4" />
-              <span>Execution & Logs</span>
-            </div>
-
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl min-h-[500px] flex flex-col overflow-hidden shadow-2xl">
-              {runningExecution ? (
-                <ExecutionViewer executionId={runningExecution.id} onComplete={() => setRunningExecution(null)} />
-              ) : selectedProcess ? (
-                <ProcessDetails process={selectedProcess} onRun={() => handleStartProcess(selectedProcess.id)} />
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-slate-500 space-y-4">
-                  <Terminal className="w-16 h-16 opacity-20" />
-                  <p>Select a process or start a new execution to view details</p>
-                </div>
-              )}
-            </div>
-          </section>
-        </div>
-
-        {/* Add Process Modal */}
-        <AnimatePresence>
-          {showAddModal && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-xl space-y-6 shadow-2xl"
-              >
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold">New Process</h2>
-                  <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white">&times;</button>
+            <section className="md:col-span-2 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2 text-slate-400 font-semibold uppercase text-xs tracking-wider">
+                  <Terminal className="w-4 h-4" />
+                  <span>Execution & Logs</span>
                 </div>
                 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-1">Process Name</label>
-                    <input 
-                      type="text" 
-                      value={newProcess.name}
-                      onChange={(e) => setNewProcess({...newProcess, name: e.target.value})}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                      placeholder="e.g. Data Sync Pipeline"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-1">Description</label>
-                    <textarea 
-                      value={newProcess.description}
-                      onChange={(e) => setNewProcess({...newProcess, description: e.target.value})}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition-all h-24"
-                      placeholder="What does this process do?"
-                    />
-                  </div>
-                  <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2">
-                    <div className="flex justify-between items-center">
-                      <label className="block text-sm font-medium text-slate-400">Process Steps</label>
-                      <button 
-                        onClick={addStep}
-                        className="text-xs bg-blue-600/20 text-blue-400 px-2 py-1 rounded hover:bg-blue-600/30 transition-colors flex items-center space-x-1"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>Add Step</span>
-                      </button>
-                    </div>
-
-                    {newProcess.steps.map((step, index) => (
-                      <div key={index} className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-4 relative">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Step {index + 1}</span>
-                          {newProcess.steps.length > 1 && (
-                            <button 
-                              onClick={() => removeStep(index)}
-                              className="text-slate-500 hover:text-rose-500 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Step Type</label>
-                          <select 
-                            value={step.type}
-                            onChange={(e) => {
-                              const type = e.target.value;
-                              let updates: any = { type };
-                              if (type === 'shell') updates.command = 'echo "Hello"';
-                              if (type === 'python') updates.code = 'print("Hello")';
-                              if (type === 'resend') {
-                                updates.from_email = 'onboarding@resend.dev';
-                                updates.to = '';
-                                updates.subject = '';
-                                updates.body = '';
-                              }
-                              updateStep(index, updates);
-                            }}
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                          >
-                            <option value="shell">Shell Command</option>
-                            <option value="python">Python Code</option>
-                            <option value="resend">Resend Email</option>
-                          </select>
-                        </div>
-
-                        {step.type === 'shell' && (
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Command</label>
-                            <input 
-                              type="text" 
-                              value={step.command || ''}
-                              onChange={(e) => updateStep(index, { command: e.target.value })}
-                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 font-mono text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                            />
-                          </div>
-                        )}
-
-                        {step.type === 'python' && (
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Python Code</label>
-                            <textarea 
-                              value={step.code || ''}
-                              onChange={(e) => updateStep(index, { code: e.target.value })}
-                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 font-mono text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all h-20"
-                            />
-                          </div>
-                        )}
-
-                        {step.type === 'resend' && (
-                          <div className="space-y-3">
-                            <div>
-                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">From</label>
-                              <input 
-                                type="email" 
-                                value={step.from_email || 'onboarding@resend.dev'}
-                                onChange={(e) => updateStep(index, { from_email: e.target.value })}
-                                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                                placeholder="sender@example.com"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">To</label>
-                              <input 
-                                type="email" 
-                                value={step.to || ''}
-                                onChange={(e) => updateStep(index, { to: e.target.value })}
-                                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                                placeholder="recipient@example.com"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subject</label>
-                              <input 
-                                type="text" 
-                                value={step.subject || ''}
-                                onChange={(e) => updateStep(index, { subject: e.target.value })}
-                                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                                placeholder="Email Subject"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Body (HTML)</label>
-                              <textarea 
-                                value={step.body || ''}
-                                onChange={(e) => updateStep(index, { body: e.target.value })}
-                                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all h-20"
-                                placeholder="<h1>Hello</h1>"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex space-x-3 pt-4">
-                  <button 
-                    onClick={handleCreateProcess}
-                    className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-lg font-bold transition-all shadow-lg shadow-blue-500/10"
+                <div className="flex items-center space-x-2 text-xs">
+                  <span className="text-slate-500 uppercase tracking-tighter font-bold">Refresh:</span>
+                  <select 
+                    value={refreshInterval}
+                    onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                    className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-300 focus:outline-none"
                   >
-                    Create Process
-                  </button>
-                  <button 
-                    onClick={() => setShowAddModal(false)}
-                    className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-lg font-bold transition-all"
-                  >
-                    Cancel
-                  </button>
+                    <option value={1000}>Real-time (1s)</option>
+                    <option value={5000}>Normal (5s)</option>
+                    <option value={10000}>Slow (10s)</option>
+                    <option value={0}>Manual (Off)</option>
+                  </select>
                 </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-      </div>
-    </main>
-  );
-}
+              </div>
 
-function ExecutionViewer({ executionId, onComplete }: { executionId: number, onComplete: () => void }) {
-  const { data: execution, mutate } = useSWR(`execution-${executionId}`, () => getExecution(executionId), {
-    refreshInterval: 1000
-  });
-
-  useEffect(() => {
-    if (execution?.status === 'completed' || execution?.status === 'failed') {
-      // Keep it visible for a moment then allow onComplete
-    }
-  }, [execution]);
-
-  if (!execution) return <div className="flex-1 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>;
-
-  return (
-    <div className="flex-1 flex flex-col">
-      <div className="bg-slate-800/50 p-4 border-b border-slate-800 flex justify-between items-center">
-        <div className="flex items-center space-x-3">
-          {execution.status === 'running' && <Loader2 className="w-5 h-5 animate-spin text-blue-500" />}
-          {execution.status === 'completed' && <CheckCircle className="w-5 h-5 text-emerald-500" />}
-          {execution.status === 'failed' && <XCircle className="w-5 h-5 text-rose-500" />}
-          <span className="font-bold">Execution #{execution.id}</span>
-          <span className={clsx(
-            "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
-            execution.status === 'running' ? "bg-blue-500/20 text-blue-400" :
-            execution.status === 'completed' ? "bg-emerald-500/20 text-emerald-400" :
-            "bg-rose-500/20 text-rose-400"
-          )}>{execution.status}</span>
-        </div>
-        <div className="flex items-center space-x-4">
-          <div className="w-32 bg-slate-950 h-1.5 rounded-full overflow-hidden">
-            <div className="bg-blue-600 h-full transition-all duration-500" style={{ width: `${execution.progress}%` }}></div>
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl min-h-[500px] flex flex-col overflow-hidden shadow-2xl">
+                {runningExecution ? (
+                  <ExecutionViewer 
+                    executionId={runningExecution.id} 
+                    onComplete={() => setRunningExecution(null)}
+                    refreshInterval={refreshInterval}
+                  />
+                ) : selectedProcess ? (
+                  <ProcessDetails 
+                    process={selectedProcess} 
+                    onRun={() => handleRunProcess(selectedProcess.id)} 
+                  />
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center text-slate-500 space-y-4">
+                    <Terminal className="w-16 h-16 opacity-20" />
+                    <p>Select a process or start a new execution to view details</p>
+                  </div>
+                )}
+              </div>
+            </section>
           </div>
-          <button onClick={onComplete} className="text-slate-400 hover:text-white text-sm">Close</button>
-        </div>
-      </div>
-      <div className="flex-1 p-4 font-mono text-xs bg-slate-950 overflow-y-auto max-h-[500px]">
-        {execution.logs ? (
-          <pre className="whitespace-pre-wrap">{execution.logs}</pre>
-        ) : (
-          <p className="text-slate-600 italic">No logs available yet...</p>
+        )}
+
+        <ProcessFormModal 
+          isOpen={showAddModal} 
+          onClose={() => setShowAddModal(false)} 
+          onCreate={handleCreateProcess} 
+        />
+
+        {schedulingProcess && (
+          <ScheduleModal
+            isOpen={!!schedulingProcess}
+            onClose={() => setSchedulingProcess(null)}
+            processId={schedulingProcess.id}
+            processName={schedulingProcess.name}
+          />
         )}
       </div>
-    </div>
-  );
-}
-
-function ProcessDetails({ process, onRun }: { process: Process, onRun: () => void }) {
-  return (
-    <div className="flex-1 flex flex-col">
-      <div className="p-8 space-y-6">
-        <div>
-          <h2 className="text-3xl font-bold mb-2">{process.name}</h2>
-          <p className="text-slate-400 text-lg">{process.description || "No description provided."}</p>
-        </div>
-        
-        <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Configured Steps</h4>
-          <div className="space-y-2">
-            {process.steps.map((step, i) => (
-              <div key={i} className="flex items-center space-x-3 bg-slate-950/50 p-3 rounded-lg border border-slate-800">
-                <span className="text-slate-600 font-mono text-sm">{i + 1}.</span>
-                <span className="bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded text-[10px] font-bold uppercase">{step.type}</span>
-                <code className="text-slate-300 text-sm truncate">
-                  {step.type === 'resend' ? `From: ${step.from_email || 'onboarding@resend.dev'} | To: ${step.to}` : (step.command || step.code)}
-                </code>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <button 
-          onClick={onRun}
-          className="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl transition-all font-bold shadow-lg shadow-emerald-500/10"
-        >
-          <Play className="w-5 h-5 fill-current" />
-          <span>Launch Process Now</span>
-        </button>
-      </div>
-    </div>
+    </main>
   );
 }

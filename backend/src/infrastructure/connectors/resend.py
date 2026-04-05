@@ -1,5 +1,5 @@
 import resend
-from ..config import settings
+from ...core.config import settings
 from typing import Dict, Any
 
 def send_email(to: str, subject: str, body: str, from_email: str = "onboarding@resend.dev") -> Dict[str, Any]:

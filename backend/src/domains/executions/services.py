@@ -1,20 +1,107 @@
 import asyncio
 import shlex
-from datetime import datetime
-from typing import List, Dict, Any, Callable, Awaitable
-from .models import Process, Execution, ProcessStatus
-from sqlmodel import Session, create_engine, select
-from .connectors import send_email
+import hashlib
+import json
+from datetime import datetime, timezone
+from typing import List, Dict, Any, Optional
+from sqlmodel import Session, select
+from .models import Execution, ProcessStatus
+from ..processes.models import Process
+from ...infrastructure.connectors.resend import send_email
 
-class ProcessEngine:
-    """Core process execution engine for managing asynchronous tasks."""
+class ExecutionService:
+    """Service for managing and running process executions."""
 
     def __init__(self, db_engine):
         self.db_engine = db_engine
         self.running_tasks: Dict[int, asyncio.Task] = {}
 
+    def get_execution(self, execution_id: int) -> Optional[Execution]:
+        with Session(self.db_engine) as session:
+            return session.get(Execution, execution_id)
+
+    def get_all_executions(self, limit: int = 20) -> List[Dict[str, Any]]:
+        with Session(self.db_engine) as session:
+            results = session.exec(
+                select(Execution, Process.name.label("process_name"))
+                .join(Process)
+                .order_by(Execution.started_at.desc())
+                .limit(limit)
+            ).all()
+            
+            executions = []
+            for execution, process_name in results:
+                data = execution.model_dump()
+                data["process_name"] = process_name
+                executions.append(data)
+            return executions
+
+    def get_process_executions(self, process_id: int) -> List[Execution]:
+        with Session(self.db_engine) as session:
+            return session.exec(
+                select(Execution).where(Execution.process_id == process_id)
+            ).all()
+
+    async def create_execution(self, process_id: int, params: Optional[Dict[str, Any]] = None) -> Execution:
+        with Session(self.db_engine) as session:
+            process = session.get(Process, process_id)
+            if not process:
+                raise ValueError("Process not found")
+
+            execution = Execution(process_id=process_id)
+            session.add(execution)
+            session.commit()
+            session.refresh(execution)
+            
+            # Trigger execution
+            await self.execute_process(execution.id, params)
+            return execution
+
+    def _generate_idempotency_key(self, process_id: int, params: Dict[str, Any]) -> str:
+        """Generates a SHA-256 hash based on process, parameters and a 5-minute time bucket."""
+        now = datetime.now(timezone.utc)
+        bucket = (now.minute // 5)
+        key_data = {
+            "process_id": process_id,
+            "params": params,
+            "day": now.day,
+            "hour": now.hour,
+            "bucket": bucket
+        }
+        key_str = json.dumps(key_data, sort_keys=True)
+        return hashlib.sha256(key_str.encode()).hexdigest()
+
     async def execute_process(self, execution_id: int, params: Dict[str, Any] = None):
-        """Starts a process execution."""
+        """Starts a process execution with idempotency check."""
+        params = params or {}
+        
+        with Session(self.db_engine) as session:
+            execution = session.get(Execution, execution_id)
+            if not execution:
+                return
+
+            key = self._generate_idempotency_key(execution.process_id, params)
+            execution.idempotency_key = key
+            
+            existing = session.exec(
+                select(Execution).where(
+                    Execution.idempotency_key == key,
+                    Execution.status.in_([ProcessStatus.PENDING, ProcessStatus.RUNNING]),
+                    Execution.id != execution_id
+                )
+            ).first()
+            
+            if existing:
+                execution.status = ProcessStatus.FAILED
+                execution.logs = f"Execution aborted: Duplicate found (Execution ID {existing.id}) for the same parameters within the current time window.\n"
+                execution.finished_at = datetime.now(timezone.utc)
+                session.add(execution)
+                session.commit()
+                return
+
+            session.add(execution)
+            session.commit()
+
         task = asyncio.create_task(self._run_execution(execution_id, params))
         self.running_tasks[execution_id] = task
         return task
@@ -36,7 +123,7 @@ class ProcessEngine:
                 return
 
             execution.status = ProcessStatus.RUNNING
-            execution.started_at = datetime.utcnow()
+            execution.started_at = datetime.now(timezone.utc)
             session.add(execution)
             session.commit()
 
@@ -62,19 +149,17 @@ class ProcessEngine:
                 execution.status = ProcessStatus.FAILED
                 execution.logs += f"Unhandled error: {str(e)}\n"
             finally:
-                execution.finished_at = datetime.utcnow()
+                execution.finished_at = datetime.now(timezone.utc)
                 session.add(execution)
                 session.commit()
                 if execution_id in self.running_tasks:
                     del self.running_tasks[execution_id]
 
     async def _run_step(self, step: Dict[str, Any], execution: Execution, session: Session, params: Dict[str, Any]) -> bool:
-        """Run a single step based on its type."""
         step_type = step.get("type")
         
         if step_type == "shell":
             command = step.get("command", "")
-            # Simple parameter injection
             for key, value in params.items():
                 command = command.replace(f"{{{{{key}}}}}", str(value))
             return await self._run_shell_step(command, execution, session)
@@ -90,7 +175,6 @@ class ProcessEngine:
             return False
 
     async def _run_shell_step(self, command: str, execution: Execution, session: Session) -> bool:
-        """Runs a shell command and captures logs."""
         try:
             process = await asyncio.create_subprocess_shell(
                 command,
@@ -104,8 +188,6 @@ class ProcessEngine:
                     if not line:
                         break
                     execution.logs += f"{prefix}{line.decode().strip()}\n"
-                    # Optimization: commit logs occasionally, not every line
-                    # But for now, every line is easier for real-time visibility
                     session.add(execution)
                     session.commit()
 
@@ -121,14 +203,12 @@ class ProcessEngine:
             return False
 
     async def _run_resend_step(self, step: Dict[str, Any], execution: Execution, session: Session, params: Dict[str, Any]) -> bool:
-        """Runs a Resend email step."""
         try:
             to = step.get("to", "")
             subject = step.get("subject", "")
             body = step.get("body", "")
             from_email = step.get("from_email", "onboarding@resend.dev")
 
-            # Parameter injection
             for key, value in params.items():
                 to = to.replace(f"{{{{{key}}}}}", str(value))
                 subject = subject.replace(f"{{{{{key}}}}}", str(value))

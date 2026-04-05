@@ -2,20 +2,19 @@ import asyncio
 from typing import List, Dict, Any, Optional
 from mcp.server import Server
 from mcp import types
-from sqlmodel import Session, select, create_engine
-from .models import Process, Execution, ProcessStatus
-from .engine import ProcessEngine
-from .connectors import send_email
+from sqlmodel import Session, select
+from ...domains.processes.models import Process
+from ...domains.executions.models import Execution
+from ...domains.executions.services import ExecutionService
+from .resend import send_email
 
 class MCPServer:
     """MCP server to expose process management tools to AI agents."""
 
-    def __init__(self, db_engine, process_engine: ProcessEngine):
+    def __init__(self, db_engine, execution_service: ExecutionService):
         self.db_engine = db_engine
-        self.process_engine = process_engine
+        self.execution_service = execution_service
         self.server = Server("ai-process-orchestrator")
-        # Experimental task support for long-running processes
-        # self.server.experimental.enable_tasks()
         
         self._register_handlers()
 
@@ -97,7 +96,7 @@ class MCPServer:
                     
                     # Start execution asynchronously
                     params = arguments.get("params", {})
-                    await self.process_engine.execute_process(execution.id, params)
+                    await self.execution_service.execute_process(execution.id, params)
                     
                     return types.CallToolResult(
                         content=[types.TextContent(type="text", text=f"Execution {execution.id} started for process '{process_name}'.")]
