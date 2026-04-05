@@ -18,9 +18,9 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --no-dev
 
 # Copy the rest of the application
-COPY . ./backend
+COPY . .
 
 EXPOSE 8000
 
 # Run the application using the synced virtual environment
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
