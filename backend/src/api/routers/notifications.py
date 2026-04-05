@@ -4,6 +4,7 @@ from ...infrastructure.connectors.resend import send_email
 
 router = APIRouter(tags=["Notifications"])
 
+
 @router.post("/send-email")
 async def send_email_endpoint(
     to: str, subject: str, body: str, from_email: str = "onboarding@resend.dev"

@@ -1,4 +1,3 @@
-
 from sqlmodel import Session, select
 
 from ..executions.models import Execution
@@ -26,15 +25,15 @@ class ProcessService:
                 .order_by(Execution.id.desc())
                 .limit(5)
             ).all()
-            
+
             # Reverse for chronological display
             executions.reverse()
-            
+
             recent = [
                 ExecutionStatus(id=e.id, status=e.status, started_at=e.started_at)
                 for e in executions
             ]
-            
+
             process_with_execs = ProcessReadWithExecutions.model_validate(process)
             process_with_execs.recent_executions = recent
             results.append(process_with_execs)

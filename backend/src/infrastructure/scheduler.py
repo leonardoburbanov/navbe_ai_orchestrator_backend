@@ -34,10 +34,8 @@ class ProcessScheduler:
     async def sync_schedules(self):
         """Syncs all active schedules from the database with the scheduler."""
         with Session(self.db_engine) as session:
-            schedules = session.exec(
-                select(Schedule).where(Schedule.is_active)
-            ).all()
-            
+            schedules = session.exec(select(Schedule).where(Schedule.is_active)).all()
+
             # Remove jobs that are no longer in the DB or are now inactive
             active_schedule_ids = {s.id for s in schedules}
             for schedule_id, job_id in list(self._job_ids.items()):
@@ -51,7 +49,7 @@ class ProcessScheduler:
     def add_or_update_schedule(self, schedule: Schedule):
         """Adds or updates a single schedule in the APScheduler."""
         job_id = f"schedule_{schedule.id}"
-        
+
         # Remove existing job if it exists to update it
         if schedule.id in self._job_ids:
             self.remove_schedule(schedule.id)
@@ -73,10 +71,10 @@ class ProcessScheduler:
                 trigger,
                 args=[schedule.id],
                 id=job_id,
-                replace_existing=True
+                replace_existing=True,
             )
             self._job_ids[schedule.id] = job_id
-            
+
             # Update next run time in DB
             next_run = trigger.get_next_fire_time(None, datetime.now(UTC))
             if next_run:
@@ -86,7 +84,7 @@ class ProcessScheduler:
                         db_schedule.next_run_at = next_run
                         session.add(db_schedule)
                         session.commit()
-                        
+
         except Exception as e:
             print(f"Error adding schedule {schedule.id}: {str(e)}")
 
@@ -96,7 +94,7 @@ class ProcessScheduler:
             try:
                 self.scheduler.remove_job(self._job_ids[schedule_id])
                 del self._job_ids[schedule_id]
-                
+
                 with Session(self.db_engine) as session:
                     db_schedule = session.get(Schedule, schedule_id)
                     if db_schedule:
@@ -118,7 +116,7 @@ class ProcessScheduler:
             session.add(execution)
             session.commit()
             session.refresh(execution)
-            
+
             # Update last run and next run
             schedule.last_run_at = datetime.now(UTC)
             job = self.scheduler.get_job(self._job_ids[schedule_id])

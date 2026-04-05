@@ -13,5 +13,6 @@ async def main():
     mcp_server = MCPServer(db_engine, execution_service)
     await mcp_server.run()
 
+
 if __name__ == "__main__":
     asyncio.run(main())

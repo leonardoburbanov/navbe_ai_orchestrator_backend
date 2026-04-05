@@ -8,6 +8,7 @@ engine = create_engine(
     DATABASE_URL, echo=False, connect_args={"check_same_thread": False}
 )
 
+
 def get_session():
     """Generator for database sessions."""
     with Session(engine) as session:

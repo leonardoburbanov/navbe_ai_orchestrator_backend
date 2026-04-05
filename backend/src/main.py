@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
                         text("ALTER TABLE execution ADD COLUMN idempotency_key VARCHAR")
                     )
                     conn.commit()
-                
+
                 # Check for schedule table columns (expression_type, params, etc.)
                 result = conn.execute(text("PRAGMA table_info(schedule)"))
                 columns = [row[1] for row in result.fetchall()]
@@ -73,17 +73,18 @@ async def lifespan(app: FastAPI):
         try:
             if not session.exec(select(Process)).first():
                 from .domains.processes.models import Process as ProcessModel
+
                 default_process = ProcessModel(
                     name="Hello World Process",
                     description="A simple process to test the orchestrator.",
                     steps=[
                         {
-                            "type": "shell", 
-                            "command": "echo 'Hello from Navbe AI Orchestrator'"
+                            "type": "shell",
+                            "command": "echo 'Hello from Navbe AI Orchestrator'",
                         },
                         {
-                            "type": "shell", 
-                            "command": "echo 'Sleeping for 3 seconds...'"
+                            "type": "shell",
+                            "command": "echo 'Sleeping for 3 seconds...'",
                         },
                         {"type": "shell", "command": "sleep 3"},
                         {
@@ -101,9 +102,10 @@ async def lifespan(app: FastAPI):
             pass  # Handle potential DB issues gracefully
 
     yield
-    
+
     # Shutdown scheduler
     scheduler.stop()
+
 
 app = FastAPI(title="AI Process Orchestrator", lifespan=lifespan)
 
@@ -123,4 +125,5 @@ app.include_router(notifications.router)
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
