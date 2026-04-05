@@ -37,7 +37,7 @@ class ProcessScheduler:
             schedules = session.exec(select(Schedule).where(Schedule.is_active)).all()
 
             # Remove jobs that are no longer in the DB or are now inactive
-            active_schedule_ids = {s.id for s in schedules}
+            active_schedule_ids = {s.id for s in schedules if s.id is not None}
             for schedule_id, job_id in list(self._job_ids.items()):
                 if schedule_id not in active_schedule_ids:
                     self.remove_schedule(schedule_id)
@@ -48,6 +48,9 @@ class ProcessScheduler:
 
     def add_or_update_schedule(self, schedule: Schedule):
         """Adds or updates a single schedule in the APScheduler."""
+        if schedule.id is None:
+            return
+
         job_id = f"schedule_{schedule.id}"
 
         # Remove existing job if it exists to update it
@@ -119,12 +122,16 @@ class ProcessScheduler:
 
             # Update last run and next run
             schedule.last_run_at = datetime.now(UTC)
-            job = self.scheduler.get_job(self._job_ids[schedule_id])
-            if job:
-                schedule.next_run_at = job.next_run_time
+            if schedule.id in self._job_ids:
+                job = self.scheduler.get_job(self._job_ids[schedule.id])
+                if job:
+                    schedule.next_run_at = job.next_run_time
 
             session.add(schedule)
             session.commit()
 
             # Trigger the execution via the execution service
-            await self.execution_service.execute_process(execution.id, schedule.params)
+            if execution.id is not None:
+                await self.execution_service.execute_process(
+                    execution.id, schedule.params
+                )

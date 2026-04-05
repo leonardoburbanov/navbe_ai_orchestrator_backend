@@ -29,12 +29,12 @@ class MCPServer:
                 types.Tool(
                     name="list_available_processes",
                     description="List all defined processes that can be orchestrated.",
-                    input_schema={"type": "object", "properties": {}},
+                    inputSchema={"type": "object", "properties": {}},
                 ),
                 types.Tool(
                     name="execute_process",
                     description="Trigger the execution of a process by its name.",
-                    input_schema={
+                    inputSchema={
                         "type": "object",
                         "properties": {
                             "name": {
@@ -54,7 +54,7 @@ class MCPServer:
                 types.Tool(
                     name="get_execution_status",
                     description="Retrieve the current status of a specific execution.",
-                    input_schema={
+                    inputSchema={
                         "type": "object",
                         "properties": {
                             "execution_id": {
@@ -68,7 +68,7 @@ class MCPServer:
                 types.Tool(
                     name="send_email",
                     description="Send an email via Resend.",
-                    input_schema={
+                    inputSchema={
                         "type": "object",
                         "properties": {
                             "to": {
@@ -125,17 +125,22 @@ class MCPServer:
                                     text=f"Process '{process_name}' not found.",
                                 )
                             ],
-                            is_error=True,
+                            isError=True,
                         )
 
-                    execution = Execution(process_id=process.id)
+                    execution = Execution(
+                        process_id=process.id if process.id is not None else 0
+                    )
                     session.add(execution)
                     session.commit()
                     session.refresh(execution)
 
                     # Start execution asynchronously
                     params = arguments.get("params", {})
-                    await self.execution_service.execute_process(execution.id, params)
+                    if execution.id is not None:
+                        await self.execution_service.execute_process(
+                            execution.id, params
+                        )
 
                     return types.CallToolResult(
                         content=[
@@ -160,7 +165,7 @@ class MCPServer:
                                     type="text", text=f"Execution {exec_id} not found."
                                 )
                             ],
-                            is_error=True,
+                            isError=True,
                         )
 
                     status_info = {
@@ -169,7 +174,9 @@ class MCPServer:
                         "progress": execution.progress,
                         "started_at": str(execution.started_at),
                         "finished_at": str(execution.finished_at),
-                        "logs_preview": execution.logs[-500:] if execution.logs else "",
+                        "logs_preview": (
+                            execution.logs[-500:] if execution.logs else ""
+                        ),
                     }
                     return types.CallToolResult(
                         content=[types.TextContent(type="text", text=str(status_info))]
@@ -181,9 +188,32 @@ class MCPServer:
                 body = arguments.get("body")
                 from_email = arguments.get("from_email", "onboarding@resend.dev")
 
+                if (
+                    not isinstance(to, str)
+                    or not isinstance(subject, str)
+                    or not isinstance(body, str)
+                ):
+                    return types.CallToolResult(
+                        content=[
+                            types.TextContent(
+                                type="text",
+                                text=(
+                                    "Missing required string parameters: "
+                                    "to, subject, body"
+                                ),
+                            )
+                        ],
+                        isError=True,
+                    )
+
                 try:
                     response = send_email(
-                        to=to, subject=subject, body=body, from_email=from_email
+                        to=str(to),
+                        subject=str(subject),
+                        body=str(body),
+                        from_email=str(from_email)
+                        if isinstance(from_email, str)
+                        else "onboarding@resend.dev",
                     )
                     return types.CallToolResult(
                         content=[
@@ -203,7 +233,7 @@ class MCPServer:
                                 type="text", text=f"Error sending email: {str(e)}"
                             )
                         ],
-                        is_error=True,
+                        isError=True,
                     )
 
             else:
@@ -211,7 +241,7 @@ class MCPServer:
                     content=[
                         types.TextContent(type="text", text=f"Unknown tool: {name}")
                     ],
-                    is_error=True,
+                    isError=True,
                 )
 
     async def run(self):

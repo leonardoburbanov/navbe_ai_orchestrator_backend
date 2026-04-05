@@ -5,7 +5,7 @@ import shlex
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from ...infrastructure.connectors.resend import send_email
 from ..processes.models import Process
@@ -26,14 +26,15 @@ class ExecutionService:
     def get_all_executions(self, limit: int = 20) -> list[dict[str, Any]]:
         with Session(self.db_engine) as session:
             results = session.exec(
-                select(Execution, Process.name.label("process_name"))
+                select(Execution, col(Process.name).label("process_name"))
                 .join(Process)
-                .order_by(Execution.started_at.desc())
+                .order_by(col(Execution.started_at).desc())
                 .limit(limit)
             ).all()
 
             executions = []
-            for execution, process_name in results:
+            for item in results:
+                execution, process_name = item
                 data = execution.model_dump()
                 data["process_name"] = process_name
                 executions.append(data)
@@ -41,9 +42,11 @@ class ExecutionService:
 
     def get_process_executions(self, process_id: int) -> list[Execution]:
         with Session(self.db_engine) as session:
-            return session.exec(
-                select(Execution).where(Execution.process_id == process_id)
-            ).all()
+            return list(
+                session.exec(
+                    select(Execution).where(Execution.process_id == process_id)
+                ).all()
+            )
 
     async def create_execution(
         self, process_id: int, params: dict[str, Any] | None = None
@@ -59,7 +62,8 @@ class ExecutionService:
             session.refresh(execution)
 
             # Trigger execution
-            await self.execute_process(execution.id, params)
+            if execution.id is not None:
+                await self.execute_process(execution.id, params)
             return execution
 
     def _generate_idempotency_key(self, process_id: int, params: dict[str, Any]) -> str:
@@ -76,7 +80,9 @@ class ExecutionService:
         key_str = json.dumps(key_data, sort_keys=True)
         return hashlib.sha256(key_str.encode()).hexdigest()
 
-    async def execute_process(self, execution_id: int, params: dict[str, Any] = None):
+    async def execute_process(
+        self, execution_id: int, params: dict[str, Any] | None = None
+    ):
         """Starts a process execution with idempotency check."""
         params = params or {}
 
@@ -91,7 +97,7 @@ class ExecutionService:
             existing = session.exec(
                 select(Execution).where(
                     Execution.idempotency_key == key,
-                    Execution.status.in_(
+                    col(Execution.status).in_(
                         [ProcessStatus.PENDING, ProcessStatus.RUNNING]
                     ),
                     Execution.id != execution_id,
@@ -116,7 +122,9 @@ class ExecutionService:
         self.running_tasks[execution_id] = task
         return task
 
-    async def _run_execution(self, execution_id: int, params: dict[str, Any] = None):
+    async def _run_execution(
+        self, execution_id: int, params: dict[str, Any] | None = None
+    ):
         """Internal runner for a process execution."""
         params = params or {}
         with Session(self.db_engine) as session:

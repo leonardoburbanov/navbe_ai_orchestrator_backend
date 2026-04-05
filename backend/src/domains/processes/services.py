@@ -1,4 +1,4 @@
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from ..executions.models import Execution
 from .models import ExecutionStatus, Process, ProcessReadWithExecutions, Schedule
@@ -15,22 +15,28 @@ class ProcessService:
         return process
 
     def get_processes(self) -> list[ProcessReadWithExecutions]:
-        processes = self.session.exec(select(Process)).all()
+        processes = list(self.session.exec(select(Process)).all())
         results = []
         for process in processes:
             # Get last 5 executions for the dashboard (Airflow style)
-            executions = self.session.exec(
-                select(Execution)
-                .where(Execution.process_id == process.id)
-                .order_by(Execution.id.desc())
-                .limit(5)
-            ).all()
+            executions = list(
+                self.session.exec(
+                    select(Execution)
+                    .where(Execution.process_id == process.id)
+                    .order_by(col(Execution.id).desc())
+                    .limit(5)
+                ).all()
+            )
 
             # Reverse for chronological display
             executions.reverse()
 
             recent = [
-                ExecutionStatus(id=e.id, status=e.status, started_at=e.started_at)
+                ExecutionStatus(
+                    id=e.id if e.id is not None else 0,
+                    status=e.status,
+                    started_at=e.started_at,
+                )
                 for e in executions
             ]
 
@@ -49,12 +55,14 @@ class ProcessService:
         return schedule
 
     def get_schedules(self) -> list[Schedule]:
-        return self.session.exec(select(Schedule)).all()
+        return list(self.session.exec(select(Schedule)).all())
 
     def get_process_schedules(self, process_id: int) -> list[Schedule]:
-        return self.session.exec(
-            select(Schedule).where(Schedule.process_id == process_id)
-        ).all()
+        return list(
+            self.session.exec(
+                select(Schedule).where(Schedule.process_id == process_id)
+            ).all()
+        )
 
     def delete_schedule(self, schedule_id: int) -> bool:
         schedule = self.session.get(Schedule, schedule_id)
