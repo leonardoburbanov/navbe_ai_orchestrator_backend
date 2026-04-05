@@ -1,13 +1,14 @@
-import asyncio
-from datetime import datetime, timezone
-from typing import Dict, Any, Optional
+from datetime import UTC, datetime
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from sqlmodel import Session, select
-from ..domains.processes.models import Schedule, Process
+
 from ..domains.executions.models import Execution
 from ..domains.executions.services import ExecutionService
+from ..domains.processes.models import Schedule
+
 
 class ProcessScheduler:
     """Infrastructure service for scheduling processes."""
@@ -16,7 +17,7 @@ class ProcessScheduler:
         self.db_engine = db_engine
         self.execution_service = execution_service
         self.scheduler = AsyncIOScheduler()
-        self._job_ids: Dict[int, str] = {}
+        self._job_ids: dict[int, str] = {}
 
     def start(self):
         """Starts the background scheduler."""
@@ -72,7 +73,7 @@ class ProcessScheduler:
             self._job_ids[schedule.id] = job_id
             
             # Update next run time in DB
-            next_run = trigger.get_next_fire_time(None, datetime.now(timezone.utc))
+            next_run = trigger.get_next_fire_time(None, datetime.now(UTC))
             if next_run:
                 with Session(self.db_engine) as session:
                     db_schedule = session.get(Schedule, schedule.id)
@@ -114,7 +115,7 @@ class ProcessScheduler:
             session.refresh(execution)
             
             # Update last run and next run
-            schedule.last_run_at = datetime.now(timezone.utc)
+            schedule.last_run_at = datetime.now(UTC)
             job = self.scheduler.get_job(self._job_ids[schedule_id])
             if job:
                 schedule.next_run_at = job.next_run_time

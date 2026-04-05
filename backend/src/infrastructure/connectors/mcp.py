@@ -1,12 +1,14 @@
-import asyncio
-from typing import List, Dict, Any, Optional
-from mcp.server import Server
+from typing import Any
+
 from mcp import types
+from mcp.server import Server
 from sqlmodel import Session, select
-from ...domains.processes.models import Process
+
 from ...domains.executions.models import Execution
 from ...domains.executions.services import ExecutionService
+from ...domains.processes.models import Process
 from .resend import send_email
+
 
 class MCPServer:
     """MCP server to expose process management tools to AI agents."""
@@ -22,7 +24,7 @@ class MCPServer:
         """Register the MCP tool and prompt handlers."""
 
         @self.server.list_tools()
-        async def list_tools() -> List[types.Tool]:
+        async def list_tools() -> list[types.Tool]:
             return [
                 types.Tool(
                     name="list_available_processes",
@@ -72,7 +74,7 @@ class MCPServer:
             ]
 
         @self.server.call_tool()
-        async def call_tool(name: str, arguments: Dict[str, Any]) -> types.CallToolResult:
+        async def call_tool(name: str, arguments: dict[str, Any]) -> types.CallToolResult:
             if name == "list_available_processes":
                 with Session(self.db_engine) as session:
                     processes = session.exec(select(Process)).all()

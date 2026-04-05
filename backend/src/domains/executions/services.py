@@ -1,26 +1,29 @@
 import asyncio
-import shlex
 import hashlib
 import json
-from datetime import datetime, timezone
-from typing import List, Dict, Any, Optional
+import shlex
+from datetime import UTC, datetime
+from typing import Any
+
 from sqlmodel import Session, select
-from .models import Execution, ProcessStatus
-from ..processes.models import Process
+
 from ...infrastructure.connectors.resend import send_email
+from ..processes.models import Process
+from .models import Execution, ProcessStatus
+
 
 class ExecutionService:
     """Service for managing and running process executions."""
 
     def __init__(self, db_engine):
         self.db_engine = db_engine
-        self.running_tasks: Dict[int, asyncio.Task] = {}
+        self.running_tasks: dict[int, asyncio.Task] = {}
 
-    def get_execution(self, execution_id: int) -> Optional[Execution]:
+    def get_execution(self, execution_id: int) -> Execution | None:
         with Session(self.db_engine) as session:
             return session.get(Execution, execution_id)
 
-    def get_all_executions(self, limit: int = 20) -> List[Dict[str, Any]]:
+    def get_all_executions(self, limit: int = 20) -> list[dict[str, Any]]:
         with Session(self.db_engine) as session:
             results = session.exec(
                 select(Execution, Process.name.label("process_name"))
@@ -36,13 +39,13 @@ class ExecutionService:
                 executions.append(data)
             return executions
 
-    def get_process_executions(self, process_id: int) -> List[Execution]:
+    def get_process_executions(self, process_id: int) -> list[Execution]:
         with Session(self.db_engine) as session:
             return session.exec(
                 select(Execution).where(Execution.process_id == process_id)
             ).all()
 
-    async def create_execution(self, process_id: int, params: Optional[Dict[str, Any]] = None) -> Execution:
+    async def create_execution(self, process_id: int, params: dict[str, Any] | None = None) -> Execution:
         with Session(self.db_engine) as session:
             process = session.get(Process, process_id)
             if not process:
@@ -57,9 +60,9 @@ class ExecutionService:
             await self.execute_process(execution.id, params)
             return execution
 
-    def _generate_idempotency_key(self, process_id: int, params: Dict[str, Any]) -> str:
+    def _generate_idempotency_key(self, process_id: int, params: dict[str, Any]) -> str:
         """Generates a SHA-256 hash based on process, parameters and a 5-minute time bucket."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         bucket = (now.minute // 5)
         key_data = {
             "process_id": process_id,
@@ -71,7 +74,7 @@ class ExecutionService:
         key_str = json.dumps(key_data, sort_keys=True)
         return hashlib.sha256(key_str.encode()).hexdigest()
 
-    async def execute_process(self, execution_id: int, params: Dict[str, Any] = None):
+    async def execute_process(self, execution_id: int, params: dict[str, Any] = None):
         """Starts a process execution with idempotency check."""
         params = params or {}
         
@@ -94,7 +97,7 @@ class ExecutionService:
             if existing:
                 execution.status = ProcessStatus.FAILED
                 execution.logs = f"Execution aborted: Duplicate found (Execution ID {existing.id}) for the same parameters within the current time window.\n"
-                execution.finished_at = datetime.now(timezone.utc)
+                execution.finished_at = datetime.now(UTC)
                 session.add(execution)
                 session.commit()
                 return
@@ -106,7 +109,7 @@ class ExecutionService:
         self.running_tasks[execution_id] = task
         return task
 
-    async def _run_execution(self, execution_id: int, params: Dict[str, Any] = None):
+    async def _run_execution(self, execution_id: int, params: dict[str, Any] = None):
         """Internal runner for a process execution."""
         params = params or {}
         with Session(self.db_engine) as session:
@@ -123,7 +126,7 @@ class ExecutionService:
                 return
 
             execution.status = ProcessStatus.RUNNING
-            execution.started_at = datetime.now(timezone.utc)
+            execution.started_at = datetime.now(UTC)
             session.add(execution)
             session.commit()
 
@@ -149,13 +152,13 @@ class ExecutionService:
                 execution.status = ProcessStatus.FAILED
                 execution.logs += f"Unhandled error: {str(e)}\n"
             finally:
-                execution.finished_at = datetime.now(timezone.utc)
+                execution.finished_at = datetime.now(UTC)
                 session.add(execution)
                 session.commit()
                 if execution_id in self.running_tasks:
                     del self.running_tasks[execution_id]
 
-    async def _run_step(self, step: Dict[str, Any], execution: Execution, session: Session, params: Dict[str, Any]) -> bool:
+    async def _run_step(self, step: dict[str, Any], execution: Execution, session: Session, params: dict[str, Any]) -> bool:
         step_type = step.get("type")
         
         if step_type == "shell":
@@ -202,7 +205,7 @@ class ExecutionService:
             execution.logs += f"Shell execution error: {str(e)}\n"
             return False
 
-    async def _run_resend_step(self, step: Dict[str, Any], execution: Execution, session: Session, params: Dict[str, Any]) -> bool:
+    async def _run_resend_step(self, step: dict[str, Any], execution: Execution, session: Session, params: dict[str, Any]) -> bool:
         try:
             to = step.get("to", "")
             subject = step.get("subject", "")

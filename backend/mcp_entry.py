@@ -1,8 +1,11 @@
 import asyncio
+
 from sqlmodel import create_engine
+
 from src.core.config import settings
 from src.domains.executions.services import ExecutionService
 from src.infrastructure.connectors.mcp import MCPServer
+
 
 async def main():
     db_engine = create_engine(settings.DATABASE_URL)

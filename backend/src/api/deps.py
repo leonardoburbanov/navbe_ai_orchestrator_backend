@@ -1,9 +1,9 @@
-from typing import Annotated
 from fastapi import Depends
 from sqlmodel import Session
-from ..infrastructure.database import get_session, engine
-from ..domains.processes.services import ProcessService
+
 from ..domains.executions.services import ExecutionService
+from ..domains.processes.services import ProcessService
+from ..infrastructure.database import engine, get_session
 from ..infrastructure.scheduler import ProcessScheduler
 
 # Global instances (initialized in main.py)

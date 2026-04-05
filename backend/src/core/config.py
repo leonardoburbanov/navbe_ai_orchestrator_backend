@@ -1,6 +1,7 @@
 import os
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Optional
+
 
 class Settings(BaseSettings):
     """Application settings using Pydantic Settings."""
@@ -9,7 +10,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///orchestrator.db"
     
     # Resend
-    RESEND_API_KEY: Optional[str] = None
+    RESEND_API_KEY: str | None = None
     
     model_config = SettingsConfigDict(
         # Point to the .env file in the backend root directory

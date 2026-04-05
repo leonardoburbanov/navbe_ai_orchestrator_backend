@@ -1,5 +1,6 @@
-from typing import List
-from fastapi import APIRouter, HTTPException, Depends
+
+from fastapi import APIRouter, Depends, HTTPException
+
 from ...domains.processes.models import Process, ProcessReadWithExecutions
 from ...domains.processes.services import ProcessService
 from ..deps import get_process_service
@@ -13,7 +14,7 @@ def create_process(process: Process, service: ProcessService = Depends(get_proce
     """
     return service.create_process(process)
 
-@router.get("", response_model=List[ProcessReadWithExecutions])
+@router.get("", response_model=list[ProcessReadWithExecutions])
 def read_processes(service: ProcessService = Depends(get_process_service)):
     """
     Retrieves all available processes.

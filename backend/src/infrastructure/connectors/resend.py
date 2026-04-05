@@ -1,8 +1,11 @@
-import resend
-from ...core.config import settings
-from typing import Dict, Any
+from typing import Any
 
-def send_email(to: str, subject: str, body: str, from_email: str = "onboarding@resend.dev") -> Dict[str, Any]:
+import resend
+
+from ...core.config import settings
+
+
+def send_email(to: str, subject: str, body: str, from_email: str = "onboarding@resend.dev") -> dict[str, Any]:
     """
     Sends an email using Resend API.
     

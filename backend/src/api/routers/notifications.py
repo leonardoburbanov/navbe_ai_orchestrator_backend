@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+
 from ...infrastructure.connectors.resend import send_email
 
 router = APIRouter(tags=["Notifications"])

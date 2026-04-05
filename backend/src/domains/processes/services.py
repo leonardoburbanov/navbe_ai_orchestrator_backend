@@ -1,7 +1,9 @@
-from typing import List, Optional
+
 from sqlmodel import Session, select
-from .models import Process, Schedule, ProcessReadWithExecutions, ExecutionStatus
+
 from ..executions.models import Execution
+from .models import ExecutionStatus, Process, ProcessReadWithExecutions, Schedule
+
 
 class ProcessService:
     def __init__(self, session: Session):
@@ -13,7 +15,7 @@ class ProcessService:
         self.session.refresh(process)
         return process
 
-    def get_processes(self) -> List[ProcessReadWithExecutions]:
+    def get_processes(self) -> list[ProcessReadWithExecutions]:
         processes = self.session.exec(select(Process)).all()
         results = []
         for process in processes:
@@ -38,7 +40,7 @@ class ProcessService:
             results.append(process_with_execs)
         return results
 
-    def get_process(self, process_id: int) -> Optional[Process]:
+    def get_process(self, process_id: int) -> Process | None:
         return self.session.get(Process, process_id)
 
     def create_schedule(self, schedule: Schedule) -> Schedule:
@@ -47,10 +49,10 @@ class ProcessService:
         self.session.refresh(schedule)
         return schedule
 
-    def get_schedules(self) -> List[Schedule]:
+    def get_schedules(self) -> list[Schedule]:
         return self.session.exec(select(Schedule)).all()
 
-    def get_process_schedules(self, process_id: int) -> List[Schedule]:
+    def get_process_schedules(self, process_id: int) -> list[Schedule]:
         return self.session.exec(select(Schedule).where(Schedule.process_id == process_id)).all()
 
     def delete_schedule(self, schedule_id: int) -> bool:
@@ -61,7 +63,7 @@ class ProcessService:
             return True
         return False
 
-    def toggle_schedule(self, schedule_id: int) -> Optional[Schedule]:
+    def toggle_schedule(self, schedule_id: int) -> Schedule | None:
         schedule = self.session.get(Schedule, schedule_id)
         if schedule:
             schedule.is_active = not schedule.is_active

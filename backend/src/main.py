@@ -1,15 +1,15 @@
-import asyncio
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
-from starlette.middleware.cors import CORSMiddleware
-from sqlmodel import SQLModel, Session, select, text
 
-from .core.config import settings
-from .infrastructure.database import engine
-from .api.deps import get_process_scheduler, get_execution_service
-from .api.routers import processes, executions, schedules, notifications
-from .infrastructure.connectors.mcp import MCPServer
+from fastapi import FastAPI
+from sqlmodel import Session, SQLModel, select, text
+from starlette.middleware.cors import CORSMiddleware
+
+from .api.deps import get_execution_service, get_process_scheduler
+from .api.routers import executions, notifications, processes, schedules
 from .domains.processes.models import Process
+from .infrastructure.connectors.mcp import MCPServer
+from .infrastructure.database import engine
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

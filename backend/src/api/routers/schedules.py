@@ -1,13 +1,14 @@
-from typing import List
-from fastapi import APIRouter, HTTPException, Depends
+
+from fastapi import APIRouter, Depends, HTTPException
+
 from ...domains.processes.models import Schedule
 from ...domains.processes.services import ProcessService
-from ..deps import get_process_service, get_process_scheduler
 from ...infrastructure.scheduler import ProcessScheduler
+from ..deps import get_process_scheduler, get_process_service
 
 router = APIRouter(prefix="/schedules", tags=["Schedules"])
 
-@router.get("", response_model=List[Schedule])
+@router.get("", response_model=list[Schedule])
 def read_schedules(service: ProcessService = Depends(get_process_service)):
     """Retrieves all schedules."""
     return service.get_schedules()
@@ -24,7 +25,7 @@ async def create_schedule(
         scheduler.add_or_update_schedule(schedule)
     return schedule
 
-@router.get("/process/{process_id}", response_model=List[Schedule])
+@router.get("/process/{process_id}", response_model=list[Schedule])
 def read_process_schedules(process_id: int, service: ProcessService = Depends(get_process_service)):
     """Retrieves schedules for a specific process."""
     return service.get_process_schedules(process_id)
