@@ -20,8 +20,8 @@ export const ProcessList: React.FC<ProcessListProps> = ({
 }) => {
   return (
     <section className="md:col-span-1 space-y-4">
-      <div className="flex items-center space-x-2 text-slate-400 font-semibold uppercase text-xs tracking-wider">
-        <List className="w-4 h-4" />
+      <div className="flex items-center space-x-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest">
+        <List className="w-3.5 h-3.5" />
         <span>Processes</span>
       </div>
       

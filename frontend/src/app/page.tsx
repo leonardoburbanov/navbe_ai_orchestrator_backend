@@ -57,7 +57,7 @@ export default function Home() {
         {view === 'history' ? (
           <div className="space-y-4 animate-in fade-in duration-500">
             <div className="flex items-center space-x-2 text-slate-400 font-semibold uppercase text-xs tracking-wider">
-              <History className="w-4 h-4 text-emerald-500" />
+              <History className="w-4 h-4 text-white" />
               <span>Global Execution History</span>
             </div>
             
@@ -84,22 +84,22 @@ export default function Home() {
 
             <section className="md:col-span-2 space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 text-slate-400 font-semibold uppercase text-xs tracking-wider">
-                  <Terminal className="w-4 h-4" />
+                <div className="flex items-center space-x-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest">
+                  <Terminal className="w-3.5 h-3.5" />
                   <span>Execution & Logs</span>
                 </div>
                 
-                <div className="flex items-center space-x-2 text-xs">
-                  <span className="text-slate-500 uppercase tracking-tighter font-bold">Refresh:</span>
+                <div className="flex items-center space-x-2 text-[10px]">
+                  <span className="text-slate-600 uppercase tracking-widest font-bold">Refresh:</span>
                   <select 
                     value={refreshInterval}
                     onChange={(e) => setRefreshInterval(Number(e.target.value))}
-                    className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-300 focus:outline-none"
+                    className="bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-slate-400 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all cursor-pointer"
                   >
-                    <option value={1000}>Real-time (1s)</option>
-                    <option value={5000}>Normal (5s)</option>
-                    <option value={10000}>Slow (10s)</option>
-                    <option value={0}>Manual (Off)</option>
+                    <option value={1000}>1s</option>
+                    <option value={5000}>5s</option>
+                    <option value={10000}>10s</option>
+                    <option value={0}>Off</option>
                   </select>
                 </div>
               </div>

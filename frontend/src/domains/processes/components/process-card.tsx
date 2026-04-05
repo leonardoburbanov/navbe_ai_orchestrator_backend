@@ -25,36 +25,36 @@ export const ProcessCard: React.FC<ProcessCardProps> = ({
       className={cn(
         "p-4 rounded-xl border cursor-pointer transition-all hover:scale-[1.02]",
         isSelected 
-          ? "bg-slate-900 border-blue-500/50 ring-1 ring-blue-500/20" 
+          ? "bg-slate-900 border-white/50 ring-1 ring-white/20" 
           : "bg-slate-900/50 border-slate-800 hover:border-slate-700"
       )}
     >
       <div className="flex justify-between items-start mb-2">
-        <h3 className="font-bold text-lg">{process.name}</h3>
+        <h3 className="font-bold text-base">{process.name}</h3>
         <div className="flex items-center space-x-1">
           <button 
             onClick={(e) => { 
               e.stopPropagation(); 
               onSchedule(process); 
             }}
-            className="p-1.5 bg-slate-800/50 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-blue-400 transition-colors"
+            className="p-1.5 bg-slate-800/50 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
             title="Schedule Process"
           >
-            <Clock className="w-4 h-4" />
+            <Clock className="w-3.5 h-3.5" />
           </button>
           <button 
             onClick={(e) => { 
               e.stopPropagation(); 
               onRun(process.id); 
             }}
-            className="p-1.5 bg-blue-600/10 hover:bg-blue-600/20 rounded-lg text-blue-400 transition-colors"
+            className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
             title="Run Process"
           >
-            <Play className="w-4 h-4 fill-current" />
+            <Play className="w-3.5 h-3.5 fill-current" />
           </button>
         </div>
       </div>
-      <p className="text-sm text-slate-400 line-clamp-2 mb-4">
+      <p className="text-xs text-slate-400 line-clamp-2 mb-4 leading-relaxed">
         {process.description || "No description provided."}
       </p>
 

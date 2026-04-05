@@ -60,36 +60,36 @@ export const ProcessFormModal: React.FC<ProcessFormModalProps> = ({
             className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-xl space-y-6 shadow-2xl"
           >
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">New Process</h2>
+              <h2 className="text-xl font-bold">New Process</h2>
               <button onClick={onClose} className="text-slate-400 hover:text-white">&times;</button>
             </div>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Process Name</label>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Process Name</label>
                 <input 
                   type="text" 
                   value={newProcess.name}
                   onChange={(e) => setNewProcess({...newProcess, name: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm focus:ring-1 focus:ring-white outline-none transition-all placeholder:text-slate-600"
                   placeholder="e.g. Data Sync Pipeline"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Description</label>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Description</label>
                 <textarea 
                   value={newProcess.description}
                   onChange={(e) => setNewProcess({...newProcess, description: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition-all h-24"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm focus:ring-1 focus:ring-white outline-none transition-all h-24 placeholder:text-slate-600"
                   placeholder="What does this process do?"
                 />
               </div>
               <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2">
                 <div className="flex justify-between items-center">
-                  <label className="block text-sm font-medium text-slate-400">Process Steps</label>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Process Steps</label>
                   <button 
                     onClick={addStep}
-                    className="text-xs bg-blue-600/20 text-blue-400 px-2 py-1 rounded hover:bg-blue-600/30 transition-colors flex items-center space-x-1"
+                    className="text-[10px] bg-white/10 text-white px-2 py-1 rounded font-bold uppercase tracking-wider hover:bg-white/20 transition-colors flex items-center space-x-1"
                   >
                     <Plus className="w-3 h-3" />
                     <span>Add Step</span>
@@ -99,13 +99,13 @@ export const ProcessFormModal: React.FC<ProcessFormModalProps> = ({
                 {newProcess.steps.map((step, index) => (
                   <div key={index} className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-4 relative">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Step {index + 1}</span>
+                      <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Step {index + 1}</span>
                       {newProcess.steps.length > 1 && (
                         <button 
                           onClick={() => removeStep(index)}
                           className="text-slate-500 hover:text-rose-500 transition-colors"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>
@@ -127,7 +127,7 @@ export const ProcessFormModal: React.FC<ProcessFormModalProps> = ({
                           }
                           updateStep(index, updates);
                         }}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-white outline-none transition-all"
                       >
                         <option value="shell">Shell Command</option>
                         <option value="python">Python Code</option>
@@ -142,7 +142,7 @@ export const ProcessFormModal: React.FC<ProcessFormModalProps> = ({
                           type="text" 
                           value={step.command || ''}
                           onChange={(e) => updateStep(index, { command: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 font-mono text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                          className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 font-mono text-xs focus:ring-1 focus:ring-white outline-none transition-all"
                         />
                       </div>
                     )}
@@ -153,7 +153,7 @@ export const ProcessFormModal: React.FC<ProcessFormModalProps> = ({
                         <textarea 
                           value={step.code || ''}
                           onChange={(e) => updateStep(index, { code: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 font-mono text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all h-20"
+                          className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 font-mono text-xs focus:ring-1 focus:ring-white outline-none transition-all h-20"
                         />
                       </div>
                     )}
@@ -166,7 +166,7 @@ export const ProcessFormModal: React.FC<ProcessFormModalProps> = ({
                             type="email" 
                             value={step.from_email || 'onboarding@resend.dev'}
                             onChange={(e) => updateStep(index, { from_email: e.target.value })}
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-white outline-none transition-all"
                             placeholder="sender@example.com"
                           />
                         </div>
@@ -176,7 +176,7 @@ export const ProcessFormModal: React.FC<ProcessFormModalProps> = ({
                             type="email" 
                             value={step.to || ''}
                             onChange={(e) => updateStep(index, { to: e.target.value })}
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-white outline-none transition-all"
                             placeholder="recipient@example.com"
                           />
                         </div>
@@ -186,7 +186,7 @@ export const ProcessFormModal: React.FC<ProcessFormModalProps> = ({
                             type="text" 
                             value={step.subject || ''}
                             onChange={(e) => updateStep(index, { subject: e.target.value })}
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-white outline-none transition-all"
                             placeholder="Email Subject"
                           />
                         </div>
@@ -195,7 +195,7 @@ export const ProcessFormModal: React.FC<ProcessFormModalProps> = ({
                           <textarea 
                             value={step.body || ''}
                             onChange={(e) => updateStep(index, { body: e.target.value })}
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none transition-all h-20"
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-white outline-none transition-all h-20"
                             placeholder="<h1>Hello</h1>"
                           />
                         </div>
@@ -209,13 +209,13 @@ export const ProcessFormModal: React.FC<ProcessFormModalProps> = ({
             <div className="flex space-x-3 pt-4">
               <button 
                 onClick={handleCreate}
-                className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-lg font-bold transition-all shadow-lg shadow-blue-500/10"
+                className="flex-1 bg-white hover:bg-slate-200 text-black py-2.5 rounded-lg text-sm font-bold transition-all shadow-lg shadow-white/5"
               >
                 Create Process
               </button>
               <button 
                 onClick={onClose}
-                className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-lg font-bold transition-all"
+                className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-lg text-sm font-bold transition-all"
               >
                 Cancel
               </button>

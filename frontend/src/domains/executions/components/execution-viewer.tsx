@@ -24,7 +24,7 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({
 
   if (!execution) return (
     <div className="flex-1 flex items-center justify-center">
-      <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      <Loader2 className="w-8 h-8 animate-spin text-white" />
     </div>
   );
 
@@ -32,25 +32,25 @@ export const ExecutionViewer: React.FC<ExecutionViewerProps> = ({
     <div className="flex-1 flex flex-col">
       <div className="bg-slate-800/50 p-4 border-b border-slate-800 flex justify-between items-center">
         <div className="flex items-center space-x-3">
-          {execution.status === 'running' && <Loader2 className="w-5 h-5 animate-spin text-blue-500" />}
-          {execution.status === 'completed' && <CheckCircle className="w-5 h-5 text-emerald-500" />}
-          {execution.status === 'failed' && <XCircle className="w-5 h-5 text-rose-500" />}
-          <span className="font-bold">Execution #{execution.id}</span>
+          {execution.status === 'running' && <Loader2 className="w-4 h-4 animate-spin text-white" />}
+          {execution.status === 'completed' && <CheckCircle className="w-4 h-4 text-emerald-500" />}
+          {execution.status === 'failed' && <XCircle className="w-4 h-4 text-rose-500" />}
+          <span className="font-bold text-sm">Execution #{execution.id}</span>
           <span className={cn(
-            "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
-            execution.status === 'running' ? "bg-blue-500/20 text-blue-400" :
+            "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider",
+            execution.status === 'running' ? "bg-white/20 text-white" :
             execution.status === 'completed' ? "bg-emerald-500/20 text-emerald-400" :
             "bg-rose-500/20 text-rose-400"
           )}>{execution.status}</span>
         </div>
         <div className="flex items-center space-x-4">
-          <div className="w-32 bg-slate-950 h-1.5 rounded-full overflow-hidden">
-            <div className="bg-blue-600 h-full transition-all duration-500" style={{ width: `${execution.progress}%` }}></div>
+          <div className="w-32 bg-slate-950 h-1 rounded-full overflow-hidden">
+            <div className="bg-white h-full transition-all duration-500" style={{ width: `${execution.progress}%` }}></div>
           </div>
-          <button onClick={onComplete} className="text-slate-400 hover:text-white text-sm">Close</button>
+          <button onClick={onComplete} className="text-slate-500 hover:text-white text-[11px] font-bold uppercase tracking-wider transition-colors">Close</button>
         </div>
       </div>
-      <div className="flex-1 p-4 font-mono text-xs bg-slate-950 overflow-y-auto max-h-[500px]">
+      <div className="flex-1 p-4 font-mono text-[11px] leading-relaxed bg-slate-950 overflow-y-auto max-h-[500px]">
         {execution.logs ? (
           <pre className="whitespace-pre-wrap">{execution.logs}</pre>
         ) : (

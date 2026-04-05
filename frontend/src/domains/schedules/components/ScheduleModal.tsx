@@ -42,7 +42,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
         is_active: true
       });
       setExpression('');
-    } catch (err) {
+    } catch {
       alert('Failed to add schedule. Check expression format.');
     }
   };
@@ -53,10 +53,10 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
         <div className="p-6 border-b border-slate-800 flex justify-between items-center">
           <div>
             <h2 className="text-xl font-bold flex items-center space-x-2">
-              <Clock className="w-5 h-5 text-blue-400" />
+              <Clock className="w-5 h-5 text-white" />
               <span>Schedules</span>
             </h2>
-            <p className="text-sm text-slate-400">{processName}</p>
+            <p className="text-xs text-slate-400 font-medium">{processName}</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-lg transition-colors">
             <X className="w-5 h-5" />
@@ -70,8 +70,8 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                 type="button"
                 onClick={() => setExpressionType('cron')}
                 className={cn(
-                  "flex-1 py-1.5 text-sm font-medium rounded-md transition-all",
-                  expressionType === 'cron' ? "bg-blue-600 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"
+                  "flex-1 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all",
+                  expressionType === 'cron' ? "bg-white text-black shadow-sm" : "text-slate-400 hover:text-slate-200"
                 )}
               >
                 Cron
@@ -80,8 +80,8 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                 type="button"
                 onClick={() => setExpressionType('interval')}
                 className={cn(
-                  "flex-1 py-1.5 text-sm font-medium rounded-md transition-all",
-                  expressionType === 'interval' ? "bg-blue-600 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"
+                  "flex-1 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all",
+                  expressionType === 'interval' ? "bg-white text-black shadow-sm" : "text-slate-400 hover:text-slate-200"
                 )}
               >
                 Interval
@@ -89,8 +89,8 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                {expressionType === 'cron' ? 'Cron Expression (e.g. */5 * * * *)' : 'Interval in Seconds (e.g. 60)'}
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                {expressionType === 'cron' ? 'Cron Expression' : 'Interval (Seconds)'}
               </label>
               <div className="flex space-x-2">
                 <input
@@ -98,25 +98,25 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                   value={expression}
                   onChange={(e) => setExpression(e.target.value)}
                   placeholder={expressionType === 'cron' ? "*/5 * * * *" : "60"}
-                  className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-white/50 placeholder:text-slate-600"
                 />
                 <button
                   type="submit"
                   disabled={!expression}
-                  className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed p-2 rounded-lg transition-colors"
+                  className="bg-white hover:bg-slate-200 text-black disabled:opacity-50 disabled:cursor-not-allowed p-2 rounded-lg transition-colors"
                 >
-                  <Plus className="w-5 h-5" />
+                  <Plus className="w-4 h-4" />
                 </button>
               </div>
             </div>
           </form>
 
           <div className="space-y-3">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Active Schedules</h3>
+            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Active Schedules</h3>
             {isLoading ? (
-              <div className="text-center py-4 text-slate-500 text-sm">Loading...</div>
+              <div className="text-center py-4 text-slate-500 text-xs font-medium">Loading...</div>
             ) : schedules.length === 0 ? (
-              <div className="text-center py-8 bg-slate-950/50 rounded-xl border border-dashed border-slate-800 text-slate-500 text-sm">
+              <div className="text-center py-8 bg-slate-950/50 rounded-xl border border-dashed border-slate-800 text-slate-500 text-xs font-medium">
                 No schedules defined for this process.
               </div>
             ) : (
@@ -124,15 +124,15 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                 {schedules.map((schedule) => (
                   <div key={schedule.id} className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-xl">
                     <div>
-                      <div className="text-sm font-medium flex items-center space-x-2">
-                        <span className="text-blue-400">{schedule.expression}</span>
-                        <span className="text-[10px] px-1.5 py-0.5 bg-slate-800 rounded text-slate-400 uppercase font-bold tracking-tighter">
+                      <div className="text-sm font-bold flex items-center space-x-2">
+                        <span className="text-white">{schedule.expression}</span>
+                        <span className="text-[9px] px-1.5 py-0.5 bg-slate-800 rounded text-slate-400 uppercase font-black tracking-tighter">
                           {schedule.expression_type}
                         </span>
                       </div>
                       {schedule.next_run_at && (
-                        <div className="text-[10px] text-slate-500 mt-1">
-                          Next run: {new Date(schedule.next_run_at).toLocaleString()}
+                        <div className="text-[10px] text-slate-500 mt-1 font-medium">
+                          Next: {new Date(schedule.next_run_at).toLocaleString()}
                         </div>
                       )}
                     </div>
@@ -145,14 +145,14 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                         )}
                         title={schedule.is_active ? "Deactivate" : "Activate"}
                       >
-                        <Power className="w-4 h-4" />
+                        <Power className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => removeSchedule(schedule.id)}
                         className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
                         title="Delete"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>

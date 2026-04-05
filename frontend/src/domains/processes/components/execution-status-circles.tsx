@@ -35,7 +35,7 @@ export const ExecutionStatusCircles: React.FC<ExecutionStatusCirclesProps> = ({
               "w-3 h-3 rounded-full transition-all",
               exec.status === 'completed' && "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]",
               exec.status === 'failed' && "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.3)]",
-              exec.status === 'running' && "bg-sky-500 animate-pulse shadow-[0_0_8px_rgba(14,165,233,0.3)]",
+              exec.status === 'running' && "bg-white animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.3)]",
               exec.status === 'pending' && "bg-slate-500"
             )}
             title={`Execution #${exec.id}: ${exec.status}${exec.started_at ? ` at ${new Date(exec.started_at).toLocaleString()}` : ''}`}
