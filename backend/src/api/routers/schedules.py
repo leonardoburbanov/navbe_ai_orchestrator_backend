@@ -26,7 +26,10 @@ async def create_schedule(
     return schedule
 
 @router.get("/process/{process_id}", response_model=list[Schedule])
-def read_process_schedules(process_id: int, service: ProcessService = Depends(get_process_service)):
+def read_process_schedules(
+    process_id: int, 
+    service: ProcessService = Depends(get_process_service)
+):
     """Retrieves schedules for a specific process."""
     return service.get_process_schedules(process_id)
 

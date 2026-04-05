@@ -5,7 +5,12 @@ import resend
 from ...core.config import settings
 
 
-def send_email(to: str, subject: str, body: str, from_email: str = "onboarding@resend.dev") -> dict[str, Any]:
+def send_email(
+    to: str, 
+    subject: str, 
+    body: str, 
+    from_email: str = "onboarding@resend.dev"
+) -> dict[str, Any]:
     """
     Sends an email using Resend API.
     
@@ -16,7 +21,9 @@ def send_email(to: str, subject: str, body: str, from_email: str = "onboarding@r
     :return: Resend API response.
     """
     if not settings.RESEND_API_KEY:
-        raise ValueError("RESEND_API_KEY is not set in environment variables or .env file.")
+        raise ValueError(
+            "RESEND_API_KEY is not set in environment variables or .env file."
+        )
     
     resend.api_key = settings.RESEND_API_KEY
     

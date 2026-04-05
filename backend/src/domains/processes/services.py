@@ -53,7 +53,9 @@ class ProcessService:
         return self.session.exec(select(Schedule)).all()
 
     def get_process_schedules(self, process_id: int) -> list[Schedule]:
-        return self.session.exec(select(Schedule).where(Schedule.process_id == process_id)).all()
+        return self.session.exec(
+            select(Schedule).where(Schedule.process_id == process_id)
+        ).all()
 
     def delete_schedule(self, schedule_id: int) -> bool:
         schedule = self.session.get(Schedule, schedule_id)

@@ -23,7 +23,10 @@ async def create_execution(
         raise HTTPException(status_code=404, detail=str(e))
 
 @router.get("/{execution_id}", response_model=Execution)
-def read_execution(execution_id: int, service: ExecutionService = Depends(get_execution_service)):
+def read_execution(
+    execution_id: int, 
+    service: ExecutionService = Depends(get_execution_service)
+):
     execution = service.get_execution(execution_id)
     if not execution:
         raise HTTPException(status_code=404, detail="Execution not found")
@@ -40,5 +43,8 @@ def read_all_executions(
     return service.get_all_executions(limit)
 
 @router.get("/process/{process_id}", response_model=list[Execution])
-def read_process_executions(process_id: int, service: ExecutionService = Depends(get_execution_service)):
+def read_process_executions(
+    process_id: int, 
+    service: ExecutionService = Depends(get_execution_service)
+):
     return service.get_process_executions(process_id)

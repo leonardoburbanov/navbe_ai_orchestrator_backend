@@ -40,8 +40,16 @@ class MCPServer:
                     input_schema={
                         "type": "object",
                         "properties": {
-                            "name": {"type": "string", "description": "The name of the process to execute."},
-                            "params": {"type": "object", "description": "Parameters to pass to the process steps."}
+                            "name": {
+                                "type": "string", 
+                                "description": "The name of the process to execute."
+                            },
+                            "params": {
+                                "type": "object", 
+                                "description": (
+                                    "Parameters to pass to the process steps."
+                                )
+                            }
                         },
                         "required": ["name"]
                     }
@@ -52,7 +60,10 @@ class MCPServer:
                     input_schema={
                         "type": "object",
                         "properties": {
-                            "execution_id": {"type": "integer", "description": "The ID of the execution to check."}
+                            "execution_id": {
+                                "type": "integer", 
+                                "description": "The ID of the execution to check."
+                            }
                         },
                         "required": ["execution_id"]
                     }
@@ -63,10 +74,25 @@ class MCPServer:
                     input_schema={
                         "type": "object",
                         "properties": {
-                            "to": {"type": "string", "description": "Recipient email address."},
-                            "subject": {"type": "string", "description": "Email subject."},
-                            "body": {"type": "string", "description": "Email body (HTML)."},
-                            "from_email": {"type": "string", "description": "Sender email address (optional, defaults to onboarding@resend.dev)."}
+                            "to": {
+                                "type": "string", 
+                                "description": "Recipient email address."
+                            },
+                            "subject": {
+                                "type": "string", 
+                                "description": "Email subject."
+                            },
+                            "body": {
+                                "type": "string", 
+                                "description": "Email body (HTML)."
+                            },
+                            "from_email": {
+                                "type": "string", 
+                                "description": (
+                                    "Sender email address (optional, "
+                                    "defaults to onboarding@resend.dev)."
+                                )
+                            }
                         },
                         "required": ["to", "subject", "body"]
                     }
@@ -74,20 +100,34 @@ class MCPServer:
             ]
 
         @self.server.call_tool()
-        async def call_tool(name: str, arguments: dict[str, Any]) -> types.CallToolResult:
+        async def call_tool(
+            name: str, arguments: dict[str, Any]
+        ) -> types.CallToolResult:
             if name == "list_available_processes":
                 with Session(self.db_engine) as session:
                     processes = session.exec(select(Process)).all()
-                    result = [{"id": p.id, "name": p.name, "description": p.description} for p in processes]
-                    return types.CallToolResult(content=[types.TextContent(type="text", text=str(result))])
+                    result = [
+                        {"id": p.id, "name": p.name, "description": p.description} 
+                        for p in processes
+                    ]
+                    return types.CallToolResult(
+                        content=[types.TextContent(type="text", text=str(result))]
+                    )
 
             elif name == "execute_process":
                 process_name = arguments.get("name")
                 with Session(self.db_engine) as session:
-                    process = session.exec(select(Process).where(Process.name == process_name)).first()
+                    process = session.exec(
+                        select(Process).where(Process.name == process_name)
+                    ).first()
                     if not process:
                         return types.CallToolResult(
-                            content=[types.TextContent(type="text", text=f"Process '{process_name}' not found.")],
+                            content=[
+                                types.TextContent(
+                                    type="text", 
+                                    text=f"Process '{process_name}' not found."
+                                )
+                            ],
                             is_error=True
                         )
                     
@@ -101,7 +141,15 @@ class MCPServer:
                     await self.execution_service.execute_process(execution.id, params)
                     
                     return types.CallToolResult(
-                        content=[types.TextContent(type="text", text=f"Execution {execution.id} started for process '{process_name}'.")]
+                        content=[
+                            types.TextContent(
+                                type="text", 
+                                text=(
+                                    f"Execution {execution.id} started "
+                                    f"for process '{process_name}'."
+                                )
+                            )
+                        ]
                     )
 
             elif name == "get_execution_status":
@@ -110,7 +158,12 @@ class MCPServer:
                     execution = session.get(Execution, exec_id)
                     if not execution:
                         return types.CallToolResult(
-                            content=[types.TextContent(type="text", text=f"Execution {exec_id} not found.")],
+                            content=[
+                                types.TextContent(
+                                    type="text", 
+                                    text=f"Execution {exec_id} not found."
+                                )
+                            ],
                             is_error=True
                         )
                     
@@ -122,7 +175,9 @@ class MCPServer:
                         "finished_at": str(execution.finished_at),
                         "logs_preview": execution.logs[-500:] if execution.logs else ""
                     }
-                    return types.CallToolResult(content=[types.TextContent(type="text", text=str(status_info))])
+                    return types.CallToolResult(
+                        content=[types.TextContent(type="text", text=str(status_info))]
+                    )
 
             elif name == "send_email":
                 to = arguments.get("to")
@@ -131,19 +186,36 @@ class MCPServer:
                 from_email = arguments.get("from_email", "onboarding@resend.dev")
                 
                 try:
-                    response = send_email(to=to, subject=subject, body=body, from_email=from_email)
+                    response = send_email(
+                        to=to, subject=subject, body=body, from_email=from_email
+                    )
                     return types.CallToolResult(
-                        content=[types.TextContent(type="text", text=f"Email sent successfully to {to}. Response: {response}")]
+                        content=[
+                            types.TextContent(
+                                type="text", 
+                                text=(
+                                    f"Email sent successfully to {to}. "
+                                    f"Response: {response}"
+                                )
+                            )
+                        ]
                     )
                 except Exception as e:
                     return types.CallToolResult(
-                        content=[types.TextContent(type="text", text=f"Error sending email: {str(e)}")],
+                        content=[
+                            types.TextContent(
+                                type="text", 
+                                text=f"Error sending email: {str(e)}"
+                            )
+                        ],
                         is_error=True
                     )
 
             else:
                 return types.CallToolResult(
-                    content=[types.TextContent(type="text", text=f"Unknown tool: {name}")],
+                    content=[
+                        types.TextContent(type="text", text=f"Unknown tool: {name}")
+                    ],
                     is_error=True
                 )
 

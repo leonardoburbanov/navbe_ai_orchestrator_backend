@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship, SQLModel
@@ -7,7 +7,7 @@ from sqlmodel import Field, Relationship, SQLModel
 if TYPE_CHECKING:
     from ..processes.models import Process
 
-class ProcessStatus(str, Enum):
+class ProcessStatus(StrEnum):
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"

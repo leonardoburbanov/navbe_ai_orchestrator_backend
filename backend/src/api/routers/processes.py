@@ -8,7 +8,10 @@ from ..deps import get_process_service
 router = APIRouter(prefix="/processes", tags=["Processes"])
 
 @router.post("", response_model=Process)
-def create_process(process: Process, service: ProcessService = Depends(get_process_service)):
+def create_process(
+    process: Process, 
+    service: ProcessService = Depends(get_process_service)
+):
     """
     Creates a new process definition in the database.
     """
@@ -22,7 +25,10 @@ def read_processes(service: ProcessService = Depends(get_process_service)):
     return service.get_processes()
 
 @router.get("/{process_id}", response_model=Process)
-def read_process(process_id: int, service: ProcessService = Depends(get_process_service)):
+def read_process(
+    process_id: int, 
+    service: ProcessService = Depends(get_process_service)
+):
     """
     Retrieves a single process by its ID.
     """

@@ -45,7 +45,9 @@ class ExecutionService:
                 select(Execution).where(Execution.process_id == process_id)
             ).all()
 
-    async def create_execution(self, process_id: int, params: dict[str, Any] | None = None) -> Execution:
+    async def create_execution(
+        self, process_id: int, params: dict[str, Any] | None = None
+    ) -> Execution:
         with Session(self.db_engine) as session:
             process = session.get(Process, process_id)
             if not process:
@@ -60,8 +62,10 @@ class ExecutionService:
             await self.execute_process(execution.id, params)
             return execution
 
-    def _generate_idempotency_key(self, process_id: int, params: dict[str, Any]) -> str:
-        """Generates a SHA-256 hash based on process, parameters and a 5-minute time bucket."""
+    def _generate_idempotency_key(
+        self, process_id: int, params: dict[str, Any]
+    ) -> str:
+        """Generates a SHA-256 hash based on process, parameters and a bucket."""
         now = datetime.now(UTC)
         bucket = (now.minute // 5)
         key_data = {
@@ -89,14 +93,19 @@ class ExecutionService:
             existing = session.exec(
                 select(Execution).where(
                     Execution.idempotency_key == key,
-                    Execution.status.in_([ProcessStatus.PENDING, ProcessStatus.RUNNING]),
+                    Execution.status.in_(
+                        [ProcessStatus.PENDING, ProcessStatus.RUNNING]
+                    ),
                     Execution.id != execution_id
                 )
             ).first()
             
             if existing:
                 execution.status = ProcessStatus.FAILED
-                execution.logs = f"Execution aborted: Duplicate found (Execution ID {existing.id}) for the same parameters within the current time window.\n"
+                execution.logs = (
+                    f"Execution aborted: Duplicate found (Execution ID {existing.id}) "
+                    "for the same parameters within the current time window.\n"
+                )
                 execution.finished_at = datetime.now(UTC)
                 session.add(execution)
                 session.commit()
@@ -136,7 +145,10 @@ class ExecutionService:
             try:
                 for index, step in enumerate(steps):
                     execution.progress = (index / total_steps) * 100
-                    execution.logs += f"--- Starting step {index + 1}/{total_steps}: {step.get('type')} ---\n"
+                    execution.logs += (
+                        f"--- Starting step {index + 1}/{total_steps}: "
+                        f"{step.get('type')} ---\n"
+                    )
                     session.add(execution)
                     session.commit()
 
@@ -158,7 +170,13 @@ class ExecutionService:
                 if execution_id in self.running_tasks:
                     del self.running_tasks[execution_id]
 
-    async def _run_step(self, step: dict[str, Any], execution: Execution, session: Session, params: dict[str, Any]) -> bool:
+    async def _run_step(
+        self, 
+        step: dict[str, Any], 
+        execution: Execution, 
+        session: Session, 
+        params: dict[str, Any]
+    ) -> bool:
         step_type = step.get("type")
         
         if step_type == "shell":
@@ -170,14 +188,18 @@ class ExecutionService:
             code = step.get("code", "")
             for key, value in params.items():
                 code = code.replace(f"{{{{{key}}}}}", str(value))
-            return await self._run_shell_step(f"python -c {shlex.quote(code)}", execution, session)
+            return await self._run_shell_step(
+                f"python -c {shlex.quote(code)}", execution, session
+            )
         elif step_type == "resend":
             return await self._run_resend_step(step, execution, session, params)
         else:
             execution.logs += f"Unknown step type: {step_type}\n"
             return False
 
-    async def _run_shell_step(self, command: str, execution: Execution, session: Session) -> bool:
+    async def _run_shell_step(
+        self, command: str, execution: Execution, session: Session
+    ) -> bool:
         try:
             process = await asyncio.create_subprocess_shell(
                 command,
@@ -205,7 +227,13 @@ class ExecutionService:
             execution.logs += f"Shell execution error: {str(e)}\n"
             return False
 
-    async def _run_resend_step(self, step: dict[str, Any], execution: Execution, session: Session, params: dict[str, Any]) -> bool:
+    async def _run_resend_step(
+        self, 
+        step: dict[str, Any], 
+        execution: Execution, 
+        session: Session, 
+        params: dict[str, Any]
+    ) -> bool:
         try:
             to = step.get("to", "")
             subject = step.get("subject", "")
@@ -222,7 +250,9 @@ class ExecutionService:
             session.add(execution)
             session.commit()
 
-            response = send_email(to=to, subject=subject, body=body, from_email=from_email)
+            response = send_email(
+                to=to, subject=subject, body=body, from_email=from_email
+            )
             
             execution.logs += f"Resend response: {response}\n"
             session.add(execution)

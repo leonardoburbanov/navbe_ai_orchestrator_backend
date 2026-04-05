@@ -25,7 +25,9 @@ async def lifespan(app: FastAPI):
                 columns = [row[1] for row in result.fetchall()]
                 if "idempotency_key" not in columns:
                     print("Migrating: Adding idempotency_key to execution table")
-                    conn.execute(text("ALTER TABLE execution ADD COLUMN idempotency_key VARCHAR"))
+                    conn.execute(
+                        text("ALTER TABLE execution ADD COLUMN idempotency_key VARCHAR")
+                    )
                     conn.commit()
                 
                 # Check for schedule table columns (expression_type, params, etc.)
@@ -33,7 +35,12 @@ async def lifespan(app: FastAPI):
                 columns = [row[1] for row in result.fetchall()]
                 if "expression_type" not in columns:
                     print("Migrating: Adding expression_type to schedule table")
-                    conn.execute(text("ALTER TABLE schedule ADD COLUMN expression_type VARCHAR DEFAULT 'cron'"))
+                    conn.execute(
+                        text(
+                            "ALTER TABLE schedule ADD COLUMN "
+                            "expression_type VARCHAR DEFAULT 'cron'"
+                        )
+                    )
                     conn.commit()
                 if "params" not in columns:
                     print("Migrating: Adding params to schedule table")
@@ -41,7 +48,9 @@ async def lifespan(app: FastAPI):
                     conn.commit()
                 if "next_run_at" not in columns:
                     print("Migrating: Adding next_run_at to schedule table")
-                    conn.execute(text("ALTER TABLE schedule ADD COLUMN next_run_at DATETIME"))
+                    conn.execute(
+                        text("ALTER TABLE schedule ADD COLUMN next_run_at DATETIME")
+                    )
                     conn.commit()
             except Exception as e:
                 print(f"Migration error: {e}")
@@ -53,7 +62,7 @@ async def lifespan(app: FastAPI):
 
     # Initialize MCP Server (runs in background)
     execution_service = get_execution_service()
-    mcp_server = MCPServer(engine, execution_service)
+    _ = MCPServer(engine, execution_service)
     # MCP server would ideally be run as a separate process or background task
     # but here we just initialize it as it might be used via some interface.
     # In the original main.py, it was just created but not explicitly run
@@ -68,8 +77,14 @@ async def lifespan(app: FastAPI):
                     name="Hello World Process",
                     description="A simple process to test the orchestrator.",
                     steps=[
-                        {"type": "shell", "command": "echo 'Hello from Navbe AI Orchestrator'"},
-                        {"type": "shell", "command": "echo 'Sleeping for 3 seconds...'"},
+                        {
+                            "type": "shell", 
+                            "command": "echo 'Hello from Navbe AI Orchestrator'"
+                        },
+                        {
+                            "type": "shell", 
+                            "command": "echo 'Sleeping for 3 seconds...'"
+                        },
                         {"type": "shell", "command": "sleep 3"},
                         {
                             "type": "resend",

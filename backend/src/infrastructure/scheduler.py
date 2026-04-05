@@ -34,7 +34,9 @@ class ProcessScheduler:
     async def sync_schedules(self):
         """Syncs all active schedules from the database with the scheduler."""
         with Session(self.db_engine) as session:
-            schedules = session.exec(select(Schedule).where(Schedule.is_active == True)).all()
+            schedules = session.exec(
+                select(Schedule).where(Schedule.is_active)
+            ).all()
             
             # Remove jobs that are no longer in the DB or are now inactive
             active_schedule_ids = {s.id for s in schedules}
@@ -60,7 +62,10 @@ class ProcessScheduler:
             elif schedule.expression_type == "interval":
                 trigger = IntervalTrigger(seconds=int(schedule.expression))
             else:
-                print(f"Unknown expression type: {schedule.expression_type} for schedule {schedule.id}")
+                print(
+                    f"Unknown expression type: {schedule.expression_type} "
+                    f"for schedule {schedule.id}"
+                )
                 return
 
             self.scheduler.add_job(
