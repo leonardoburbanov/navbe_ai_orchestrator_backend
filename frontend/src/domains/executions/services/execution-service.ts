@@ -1,7 +1,7 @@
 import { apiClient } from '@/shared/lib/api-client';
 import { Execution } from '../types';
 
-export const createExecution = async (processId: number, params?: Record<string, any>): Promise<Execution> => {
+export const createExecution = async (processId: number, params?: Record<string, unknown>): Promise<Execution> => {
   const { data } = await apiClient.post('/executions', params, { params: { process_id: processId } });
   return data;
 };

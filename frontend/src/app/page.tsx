@@ -15,7 +15,7 @@ import { Process } from '@/domains/processes/types';
 import { Execution } from '@/domains/executions/types';
 
 export default function Home() {
-  const { processes, addProcess, isLoading: isProcessesLoading } = useProcesses();
+  const { processes, addProcess } = useProcesses();
   const { startExecution } = useExecutions();
   const { executions: allExecutions, isLoading: isHistoryLoading } = useAllExecutions(20, 5000);
 

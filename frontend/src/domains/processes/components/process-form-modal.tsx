@@ -41,7 +41,7 @@ export const ProcessFormModal: React.FC<ProcessFormModalProps> = ({
   };
 
   const handleCreate = async () => {
-    await onCreate(newProcess as any);
+    await onCreate(newProcess as Partial<Process>);
     setNewProcess({ 
       name: '', 
       description: '', 
@@ -116,7 +116,7 @@ export const ProcessFormModal: React.FC<ProcessFormModalProps> = ({
                         value={step.type}
                         onChange={(e) => {
                           const type = e.target.value as Step['type'];
-                          let updates: any = { type };
+                          const updates: Partial<Step> = { type };
                           if (type === 'shell') updates.command = 'echo "Hello"';
                           if (type === 'python') updates.code = 'print("Hello")';
                           if (type === 'resend') {

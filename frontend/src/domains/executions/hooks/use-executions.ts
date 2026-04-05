@@ -1,6 +1,5 @@
 import useSWR from 'swr';
 import { createExecution, getExecution, getAllExecutions } from '../services/execution-service';
-import { Execution } from '../types';
 
 export function useExecutions() {
   const startExecution = async (processId: number) => {

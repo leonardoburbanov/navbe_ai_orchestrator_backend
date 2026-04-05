@@ -5,7 +5,7 @@ export interface Schedule {
   process_id: number;
   expression: string;
   expression_type: 'cron' | 'interval';
-  params: Record<string, any>;
+  params: Record<string, unknown>;
   is_active: boolean;
   last_run_at?: string;
   next_run_at?: string;
